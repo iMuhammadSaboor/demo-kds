@@ -127,7 +127,7 @@ Everything uses CSS custom properties in `styles.css`. Change one token, everyth
 
 1. **Deploy.** Any Node 20+ host. Render.com, Fly.io, Railway, or a $5 VPS.
 2. **Point Square webhook** at `https://<your-host>/square/webhook` in the Square developer dashboard. Signature key per subscription.
-3. **Env vars**: `SQUARE_ENV` (sandbox/production), `SQUARE_TOKEN`, `SQUARE_SIG_KEY`, `SQUARE_WEBHOOK_URL`, `PORT`.
+3. **Env vars**: `SQUARE_ENV` (sandbox/production), `SQUARE_TOKEN`, `SQUARE_SIG_KEY`, `SQUARE_WEBHOOK_URL`, `PORT`, `KDS_ADMIN_PASSWORD` (locks `/settings.html` + queue clear).
 4. **Persist orders** — swap `data/orders.json` for a DB if you need multi-node or survive-redeploy. Upstash Redis free tier is plenty for one cafe.
 5. **Hardware** — one Android tablet + wall mount + silicone case.
 6. **Delivery platforms** — register merchant integrations one at a time.

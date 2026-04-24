@@ -155,8 +155,11 @@ Test it: open `https://abcd-1234.ngrok-free.app/api/health` in a browser. You sh
    SQUARE_TOKEN=EAAAEFxYourLongTokenHere...
    SQUARE_SIG_KEY=<paste-signature-key-from-step-6>
    SQUARE_WEBHOOK_URL=https://abcd-1234.ngrok-free.app/square/webhook
+   KDS_ADMIN_PASSWORD=<choose-a-strong-password>
    ```
    **The `SQUARE_WEBHOOK_URL` must match *exactly* what's in the Square dashboard** — the signature verification hashes this URL with the request body, so a single typo breaks auth.
+
+   **`KDS_ADMIN_PASSWORD`** locks `/settings.html` and the destructive `DELETE /api/orders` behind HTTP Basic Auth. Username defaults to `admin`; override with `KDS_ADMIN_USER` if you want. Leave blank to disable auth (only safe on a trusted local network).
 
 2. Restart the server (Ctrl+C, then `npm start`).
 

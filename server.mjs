@@ -36,6 +36,52 @@ const SQ_HOOK   = process.env.SQUARE_WEBHOOK_URL || "";
 const SQ_READY  = !!(SQ_TOKEN && SQ_SIG && SQ_HOOK);
 
 // -----------------------------------------------------------
+// Admin auth — protects /settings.html and DELETE /api/orders.
+// HTTP Basic Auth gated on a single env var. If unset, auth is
+// disabled (so an unconfigured deploy doesn't lock you out).
+// -----------------------------------------------------------
+const ADMIN_USER = process.env.KDS_ADMIN_USER || "admin";
+const ADMIN_PASS = process.env.KDS_ADMIN_PASSWORD || "";
+const ADMIN_AUTH_ON = !!ADMIN_PASS;
+
+function requireAdmin(req, res) {
+  if (!ADMIN_AUTH_ON) return true; // disabled when no password set
+
+  const header = req.headers.authorization || "";
+  const sendChallenge = (msg) => {
+    res.writeHead(401, {
+      "www-authenticate": 'Basic realm="Demo KDS Admin", charset="UTF-8"',
+      "content-type": "text/plain; charset=utf-8",
+      "cache-control": "no-store",
+    });
+    res.end(msg);
+  };
+
+  if (!header.startsWith("Basic ")) {
+    sendChallenge("Authentication required");
+    return false;
+  }
+
+  let decoded;
+  try { decoded = Buffer.from(header.slice(6), "base64").toString("utf8"); }
+  catch { sendChallenge("Bad authorization header"); return false; }
+
+  const idx = decoded.indexOf(":");
+  if (idx < 0) { sendChallenge("Bad credentials"); return false; }
+  const user = decoded.slice(0, idx);
+  const pass = decoded.slice(idx + 1);
+
+  // Timing-safe compare so attackers can't binary-search the password.
+  const expected = Buffer.from(`${ADMIN_USER}:${ADMIN_PASS}`, "utf8");
+  const got      = Buffer.from(`${user}:${pass}`, "utf8");
+  if (expected.length !== got.length || !crypto.timingSafeEqual(expected, got)) {
+    sendChallenge("Invalid credentials");
+    return false;
+  }
+  return true;
+}
+
+// -----------------------------------------------------------
 // Data persistence — one JSON file, atomic writes via rename.
 // One cafe, a few hundred orders/day, easily fine. Upgrade to
 // SQLite (node:sqlite in Node 22+) if this ever feels slow.
@@ -276,8 +322,9 @@ async function handleApi(req, res, url) {
       return json(res, 201, order);
     }
 
-    // DELETE /api/orders — wipe (useful during dev)
+    // DELETE /api/orders — wipe queue. Destructive: admin-gated.
     if (url.pathname === "/api/orders" && req.method === "DELETE") {
+      if (!requireAdmin(req, res)) return;
       await saveOrders([]);
       broadcast("orders.cleared", {});
       console.log("[admin] queue cleared");
@@ -439,6 +486,13 @@ async function handleWebhook(req, res) {
 async function serveStatic(req, res, url) {
   let rel = decodeURIComponent(url.pathname);
   if (rel === "/") rel = "/index.html";
+
+  // Admin pages (only the settings page for now) require basic auth
+  // when KDS_ADMIN_PASSWORD is set.
+  if (rel === "/settings.html") {
+    if (!requireAdmin(req, res)) return;
+  }
+
   const abs = normalize(join(ROOT, rel));
   if (!abs.startsWith(ROOT)) {
     res.writeHead(400); return res.end("bad path");
@@ -492,6 +546,11 @@ server.listen(PORT, () => {
     console.log("  ⚠ Square NOT configured (no .env or missing vars).");
     console.log("    The queue still works — use /counter.html, or fire a");
     console.log("    fake Square order with:  node scripts/fire-test-order.mjs");
+  }
+  if (ADMIN_AUTH_ON) {
+    console.log(`  ✓ Admin auth ON → /settings.html and DELETE /api/orders require login (user: ${ADMIN_USER})`);
+  } else {
+    console.log("  ⚠ Admin auth OFF — set KDS_ADMIN_PASSWORD to lock /settings.html");
   }
   console.log("");
 });
