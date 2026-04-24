@@ -1,0 +1,313 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Settings — Demo KDS</title>
+<link rel="stylesheet" href="styles.css" />
+<style>
+  .set-card {
+    background: var(--paper); border: 1px solid var(--line); border-radius: 12px;
+    padding: 22px; margin-bottom: 18px;
+  }
+  .set-card h3 {
+    font-family: var(--display); font-size: 18px; margin-bottom: 4px;
+  }
+  .set-card .sub { color: #8a7b6e; font-size: 13.5px; margin-bottom: 16px; }
+
+  .setting-row {
+    display: grid; grid-template-columns: 1fr 140px;
+    align-items: center; gap: 16px;
+    padding: 12px 0; border-top: 1px solid var(--line);
+  }
+  .setting-row:first-of-type { border-top: 0; padding-top: 0; }
+  .setting-row .label { font-weight: 500; font-size: 14.5px; }
+  .setting-row .hint { color: #8a7b6e; font-size: 12.5px; margin-top: 2px; }
+
+  input[type="number"], input[type="text"], select {
+    width: 100%; padding: 9px 12px; border: 1px solid var(--line);
+    border-radius: 8px; background: var(--paper); font-size: 14px;
+    font-family: var(--mono);
+  }
+  input[type="number"]:focus, input[type="text"]:focus { outline: 2px solid var(--crema); outline-offset: 1px; }
+
+  /* toggle */
+  .switch { display: inline-block; position: relative; width: 48px; height: 26px; }
+  .switch input { display: none; }
+  .slider {
+    position: absolute; inset: 0; background: var(--line); border-radius: 26px;
+    transition: background .2s;
+  }
+  .slider::before {
+    content: ""; position: absolute; left: 3px; top: 3px;
+    width: 20px; height: 20px; border-radius: 50%; background: #fff;
+    transition: transform .2s;
+  }
+  .switch input:checked + .slider { background: var(--crema); }
+  .switch input:checked + .slider::before { transform: translateX(22px); }
+
+  .station-row {
+    display: grid; grid-template-columns: 80px 1fr 100px 100px;
+    gap: 10px; align-items: center; padding: 8px 0;
+  }
+  .station-row .code {
+    font-family: var(--mono); font-size: 11.5px; text-transform: uppercase;
+    padding: 4px 8px; border-radius: 6px; background: var(--cream);
+  }
+
+  .save-bar {
+    position: sticky; bottom: 0;
+    background: var(--paper);
+    border-top: 1px solid var(--line);
+    padding: 14px 0; margin-top: 20px;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .save-status { font-family: var(--mono); font-size: 12px; color: #8a7b6e; }
+  .save-status.ok { color: #2d7a35; }
+</style>
+</head>
+<body>
+
+<header class="nav">
+  <div class="wrap nav__inner">
+    <a href="/" class="brand"><span class="brand__dot"></span>Demo KDS</a>
+    <nav class="nav__links">
+      <a href="/">Overview</a>
+      <a href="/kds.html">KDS</a>
+      <a href="/counter.html">Counter</a>
+      <a href="/history.html">History</a>
+      <a href="/settings.html" aria-current="page">Settings</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <section class="hero" style="padding: 44px 0 20px;">
+    <div class="wrap">
+      <span class="eyebrow">Configuration</span>
+      <h1 class="display" style="font-size: 36px; margin-top: 12px;">Settings</h1>
+      <p class="lede">Tune the KDS for the way your kitchen actually works — prep time targets, station assignments, how loud it barks at you.</p>
+    </div>
+  </section>
+
+  <section class="section" style="padding: 40px 0;">
+    <div class="wrap" style="max-width: 880px;">
+
+      <!-- Display behaviour -->
+      <div class="set-card">
+        <h3>Display behaviour</h3>
+        <div class="sub">These settings apply to the kitchen-facing KDS screen.</div>
+
+        <div class="setting-row">
+          <div>
+            <div class="label">Sound alerts on new orders</div>
+            <div class="hint">Short two-tone chime when a ticket hits the queue.</div>
+          </div>
+          <label class="switch"><input type="checkbox" id="opt-sound" checked><span class="slider"></span></label>
+        </div>
+
+        <div class="setting-row">
+          <div>
+            <div class="label">Flash late tickets</div>
+            <div class="hint">Orders past their prep target pulse red until bumped.</div>
+          </div>
+          <label class="switch"><input type="checkbox" id="opt-flash" checked><span class="slider"></span></label>
+        </div>
+
+        <div class="setting-row">
+          <div>
+            <div class="label">Auto-recall on accidental bump</div>
+            <div class="hint">If you bump twice in under 2 seconds, the second bump un-bumps instead. Saves mistakes during the rush.</div>
+          </div>
+          <label class="switch"><input type="checkbox" id="opt-undo" checked><span class="slider"></span></label>
+        </div>
+
+        <div class="setting-row">
+          <div>
+            <div class="label">Dense grid threshold</div>
+            <div class="hint">When queue exceeds this count, tiles shrink to fit more per screen.</div>
+          </div>
+          <input type="number" id="opt-dense" value="6" min="3" max="20" />
+        </div>
+      </div>
+
+      <!-- Prep time targets -->
+      <div class="set-card">
+        <h3>Prep-time targets</h3>
+        <div class="sub">Per category. These drive the green → amber → red colour coding on the KDS.</div>
+        <div id="prep-rows"></div>
+      </div>
+
+      <!-- Stations -->
+      <div class="set-card">
+        <h3>Stations</h3>
+        <div class="sub">Which categories print to which station. Filter chips on the KDS respect these.</div>
+        <div class="station-row" style="font-family: var(--mono); font-size: 11px; text-transform: uppercase; color: #8a7b6e; border-bottom: 1px solid var(--line); padding-bottom: 8px; margin-bottom: 4px;">
+          <div>Cat</div><div>Name</div><div>Station</div><div>Items</div>
+        </div>
+        <div id="station-rows"></div>
+      </div>
+
+      <!-- Integrations (placeholder) -->
+      <div class="set-card">
+        <h3>Integrations</h3>
+        <div class="sub">Not wired yet — these are the go-live hooks for feeding real orders into the KDS.</div>
+
+        <div class="setting-row">
+          <div>
+            <div class="label">Square POS (order pull)</div>
+            <div class="hint">Connect Square merchant account → orders land here automatically.</div>
+          </div>
+          <span class="chan chan--counter">Not connected</span>
+        </div>
+        <div class="setting-row">
+          <div>
+            <div class="label">Uber Eats webhook</div>
+            <div class="hint">Uber merchant integration POSTs new orders to this KDS.</div>
+          </div>
+          <span class="chan chan--counter">Not connected</span>
+        </div>
+        <div class="setting-row">
+          <div>
+            <div class="label">DoorDash webhook</div>
+            <div class="hint">DoorDash Drive integration, same pattern as Uber.</div>
+          </div>
+          <span class="chan chan--counter">Not connected</span>
+        </div>
+        <div class="setting-row">
+          <div>
+            <div class="label">Online orders (direct site)</div>
+            <div class="hint">The cafe's own ordering page posts straight into this queue.</div>
+          </div>
+          <span class="chan chan--online">Demo ready</span>
+        </div>
+      </div>
+
+      <div class="save-bar">
+        <span class="save-status" id="save-status">Changes are saved automatically.</span>
+        <div style="display:flex;gap:10px;">
+          <button class="btn btn--ghost" id="reset">Reset to defaults</button>
+          <button class="btn btn--primary" id="save">Save now</button>
+        </div>
+      </div>
+
+    </div>
+  </section>
+</main>
+
+<footer class="footer">
+  <div class="wrap footer__row">
+    <div>© Demo KDS — built by <a href="mailto:bmuhammadsaboor@gmail.com">Muhammad Saboor</a></div>
+    <div class="mono tiny">v0.1 · local-only prototype</div>
+  </div>
+</footer>
+
+<script>
+const SETTINGS_KEY = "cb_settings";
+const DEFAULTS = {
+  sound: true, flash: true, undo: true, dense: 6,
+  prepTargets: { coffee: 3, "non-coffee": 3, brunch: 11, lunch: 9, cakes: 1 },
+  stations: {
+    coffee: "bar", "non-coffee": "bar", brunch: "kitchen", lunch: "kitchen", cakes: "bar"
+  }
+};
+
+function load() {
+  try { return { ...DEFAULTS, ...JSON.parse(localStorage.getItem(SETTINGS_KEY) || "{}") }; }
+  catch { return { ...DEFAULTS }; }
+}
+function save(s) {
+  localStorage.setItem(SETTINGS_KEY, JSON.stringify(s));
+  flashSaved();
+}
+
+let state = load();
+let menu;
+
+fetch("./menu.json").then(r => r.json()).then(m => { menu = m; renderPrep(); renderStations(); });
+
+function renderPrep() {
+  const host = document.getElementById("prep-rows");
+  host.innerHTML = menu.categories.map(c => `
+    <div class="setting-row">
+      <div>
+        <div class="label">${c.name}</div>
+        <div class="hint">${c.items.length} items · default prep ${defaultPrep(c)}m</div>
+      </div>
+      <input type="number" data-prep="${c.id}" value="${state.prepTargets[c.id] ?? defaultPrep(c)}" min="1" max="60" />
+    </div>`).join("");
+  host.querySelectorAll("input[data-prep]").forEach(inp => {
+    inp.addEventListener("change", () => {
+      const id = inp.getAttribute("data-prep");
+      state.prepTargets[id] = parseInt(inp.value, 10) || DEFAULTS.prepTargets[id];
+      save(state);
+    });
+  });
+}
+
+function defaultPrep(cat) {
+  return Math.max(...cat.items.map(i => i.prepMin || 3));
+}
+
+function renderStations() {
+  const host = document.getElementById("station-rows");
+  host.innerHTML = menu.categories.map(c => `
+    <div class="station-row">
+      <div><span class="code">${c.id}</span></div>
+      <div>${c.name}</div>
+      <div>
+        <select data-station="${c.id}">
+          <option value="bar" ${ (state.stations[c.id] || c.station) === "bar" ? "selected" : "" }>Bar</option>
+          <option value="kitchen" ${ (state.stations[c.id] || c.station) === "kitchen" ? "selected" : "" }>Kitchen</option>
+        </select>
+      </div>
+      <div class="mono muted">${c.items.length}</div>
+    </div>`).join("");
+  host.querySelectorAll("select[data-station]").forEach(sel => {
+    sel.addEventListener("change", () => {
+      state.stations[sel.getAttribute("data-station")] = sel.value;
+      save(state);
+    });
+  });
+}
+
+/* top-level toggles */
+function wireToggle(id, key) {
+  const el = document.getElementById(id);
+  el.checked = !!state[key];
+  el.addEventListener("change", () => {
+    state[key] = el.checked;
+    save(state);
+  });
+}
+wireToggle("opt-sound", "sound");
+wireToggle("opt-flash", "flash");
+wireToggle("opt-undo", "undo");
+
+const denseInput = document.getElementById("opt-dense");
+denseInput.value = state.dense;
+denseInput.addEventListener("change", () => {
+  state.dense = parseInt(denseInput.value, 10) || DEFAULTS.dense;
+  save(state);
+});
+
+/* save status */
+function flashSaved() {
+  const el = document.getElementById("save-status");
+  el.textContent = "✓ saved " + new Date().toLocaleTimeString();
+  el.classList.add("ok");
+  setTimeout(() => { el.classList.remove("ok"); el.textContent = "Changes are saved automatically."; }, 2000);
+}
+
+document.getElementById("save").addEventListener("click", () => save(state));
+document.getElementById("reset").addEventListener("click", () => {
+  if (!confirm("Reset all settings to defaults?")) return;
+  state = { ...DEFAULTS };
+  save(state);
+  renderPrep(); renderStations();
+  wireToggle("opt-sound", "sound"); wireToggle("opt-flash", "flash"); wireToggle("opt-undo", "undo");
+  denseInput.value = state.dense;
+});
+</script>
+</body>
+</html>

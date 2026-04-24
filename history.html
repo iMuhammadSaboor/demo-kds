@@ -1,0 +1,488 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>History & Analytics — Demo KDS</title>
+<link rel="stylesheet" href="styles.css" />
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+  .grid-kpi { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 28px; }
+  .kpi {
+    background: var(--paper); border: 1px solid var(--line); border-radius: 12px;
+    padding: 18px;
+  }
+  .kpi .label {
+    font-family: var(--mono); font-size: 11px; text-transform: uppercase;
+    letter-spacing: .08em; color: #8a7b6e; margin-bottom: 6px;
+  }
+  .kpi .v { font-family: var(--display); font-weight: 700; font-size: 30px; }
+  .kpi .delta { font-family: var(--mono); font-size: 12px; margin-top: 6px; color: var(--crema-deep); }
+  .kpi .delta.red { color: #b03418; }
+
+  .charts {
+    display: grid; grid-template-columns: 1.3fr 1fr; gap: 18px; margin-bottom: 28px;
+  }
+  .chart-card {
+    background: var(--paper); border: 1px solid var(--line); border-radius: 12px;
+    padding: 18px;
+  }
+  .chart-card h3 {
+    font-family: var(--display); font-size: 17px; margin-bottom: 4px;
+  }
+  .chart-card .sub { color: #8a7b6e; font-size: 13px; margin-bottom: 14px; }
+  .chart-card .chart-wrap { height: 260px; position: relative; }
+
+  .two-col {
+    display: grid; grid-template-columns: 1.4fr 1fr; gap: 18px; margin-bottom: 28px;
+  }
+  @media (max-width: 900px) {
+    .charts, .two-col { grid-template-columns: 1fr; }
+  }
+
+  .age-chip {
+    font-family: var(--mono); font-weight: 600;
+    padding: 2px 8px; border-radius: 6px; font-size: 12px;
+  }
+  .age-chip.fresh { background: rgba(94,184,98,.15); color: #2d7a35; }
+  .age-chip.soon  { background: rgba(245,197,66,.15); color: #8a6a0f; }
+  .age-chip.late  { background: rgba(232,71,44,.18); color: #b03418; }
+
+  .empty-block {
+    padding: 40px 20px; text-align: center; color: #8a7b6e;
+    font-family: var(--body);
+  }
+  .empty-block .lg { font-size: 48px; margin-bottom: 8px; }
+</style>
+</head>
+<body>
+
+<header class="nav">
+  <div class="wrap nav__inner">
+    <a href="/" class="brand"><span class="brand__dot"></span>Demo KDS</a>
+    <nav class="nav__links">
+      <a href="/">Overview</a>
+      <a href="/kds.html">KDS</a>
+      <a href="/counter.html">Counter</a>
+      <a href="/history.html" aria-current="page">History</a>
+      <a href="/settings.html">Settings</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <section class="hero" style="padding: 44px 0 20px;">
+    <div class="wrap">
+      <span class="eyebrow">Analytics</span>
+      <h1 class="display" style="font-size: 36px; margin-top: 12px;">History &amp; prep-time analytics</h1>
+      <p class="lede">Every bumped ticket, every kitchen delay, every repeat customer — in one place. Pulled from the same local order log the KDS uses.</p>
+    </div>
+  </section>
+
+  <section class="section" style="padding: 40px 0;">
+    <div class="wrap">
+
+      <!-- KPI grid -->
+      <div class="grid-kpi" id="kpis"></div>
+
+      <!-- Charts row -->
+      <div class="charts">
+        <div class="chart-card">
+          <h3>Orders by hour</h3>
+          <div class="sub">When the rushes land — plan staffing around the tall bars.</div>
+          <div class="chart-wrap"><canvas id="hourChart"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <h3>Channel mix</h3>
+          <div class="sub">Counter vs online vs delivery platforms today.</div>
+          <div class="chart-wrap"><canvas id="chanChart"></canvas></div>
+        </div>
+      </div>
+
+      <!-- Prep time + item bestsellers -->
+      <div class="two-col">
+        <div class="chart-card">
+          <h3>Prep-time distribution</h3>
+          <div class="sub">Green &lt; half-target · amber &lt; target · red over target. Target is the longest item's prep window.</div>
+          <div class="chart-wrap"><canvas id="prepChart"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <h3>Top items (last 7 days)</h3>
+          <div class="sub">What the kitchen is actually pumping out.</div>
+          <div id="topItems"></div>
+        </div>
+      </div>
+
+      <!-- Completed orders table -->
+      <div class="chart-card" style="margin-bottom:28px;">
+        <h3>Bumped orders log</h3>
+        <div class="sub">Most recent first. Every ticket, the time it took, and how it did against target.</div>
+        <div class="table-wrap" style="border:0;margin-top:10px;">
+          <table id="logTable">
+            <thead>
+              <tr>
+                <th>Order</th>
+                <th>Time</th>
+                <th>Channel</th>
+                <th>Customer</th>
+                <th>Items</th>
+                <th>Prep</th>
+                <th>Target</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="center">
+        <button class="btn btn--crema" id="seed-hist">Seed 24 hours of demo history</button>
+        <button class="btn btn--ghost" id="wipe-hist">Clear local data</button>
+      </div>
+
+    </div>
+  </section>
+</main>
+
+<footer class="footer">
+  <div class="wrap footer__row">
+    <div>© Demo KDS — built by <a href="mailto:bmuhammadsaboor@gmail.com">Muhammad Saboor</a></div>
+    <div class="mono tiny">v0.1 · local-only prototype</div>
+  </div>
+</footer>
+
+<script src="client-api.js"></script>
+<script>
+const KEY = "cb_orders";
+const NUM_KEY = "cb_order_num";
+
+// Cached copy of server orders (refreshed async). load()/save() remain
+// synchronous so the existing render code doesn't need restructuring.
+let _cache = [];
+function load() { return _cache; }
+function save(d) {
+  _cache = d;
+  // Persist to localStorage so the seed/clear buttons still feel instant
+  // even when the backend is off.
+  localStorage.setItem(KEY, JSON.stringify(d));
+}
+async function refreshFromApi() {
+  // Merge server orders (real) with any locally-seeded history (demo).
+  // De-dupe by id, server wins.
+  const server = await kdsApi.listOrders();
+  let local = [];
+  try { local = JSON.parse(localStorage.getItem(KEY) || "[]"); } catch {}
+  const byId = new Map();
+  for (const o of local) byId.set(o.id, o);
+  for (const o of server) byId.set(o.id, o);
+  _cache = [...byId.values()];
+  renderAll();
+}
+
+function fmtDuration(sec) {
+  const m = Math.floor(sec / 60);
+  const s = Math.floor(sec % 60);
+  return `${m}:${s.toString().padStart(2, "0")}`;
+}
+
+function ageBucket(prepSec, targetMin) {
+  const m = prepSec / 60;
+  if (m < targetMin * 0.5) return "fresh";
+  if (m < targetMin) return "soon";
+  return "late";
+}
+
+function bumpedOrders() {
+  return load().filter(o => o.status === "bumped" && o.bumpedAt > 0);
+}
+
+/* ---------- KPIs ---------- */
+function renderKpis() {
+  const bumped = bumpedOrders();
+  const now = Date.now();
+  const today = bumped.filter(o => now - o.bumpedAt < 24 * 60 * 60 * 1000);
+
+  const prepSecs = bumped.map(o => (o.bumpedAt - o.createdAt) / 1000);
+  const avgPrep = prepSecs.length ? prepSecs.reduce((a,b)=>a+b,0) / prepSecs.length : 0;
+  const revenue = bumped.reduce((sum, o) =>
+    sum + o.items.reduce((s, i) => s + (i.priceEach || 0) * i.qty, 0)
+  , 0);
+
+  const late = prepSecs.filter((p, i) => {
+    const maxPrep = Math.max(...bumped[i].items.map(x => x.prepMin || 3));
+    return p / 60 > maxPrep;
+  }).length;
+
+  const onTime = prepSecs.length ? Math.round((1 - late / prepSecs.length) * 100) : 0;
+
+  document.getElementById("kpis").innerHTML = `
+    <div class="kpi"><div class="label">Orders bumped</div><div class="v">${bumped.length}</div><div class="delta">${today.length} in last 24h</div></div>
+    <div class="kpi"><div class="label">Avg prep time</div><div class="v">${fmtDuration(avgPrep)}</div><div class="delta">target varies per ticket</div></div>
+    <div class="kpi"><div class="label">On-time rate</div><div class="v">${onTime}%</div><div class="delta ${onTime < 85 ? "red" : ""}">${late} ran over target</div></div>
+    <div class="kpi"><div class="label">Est. revenue</div><div class="v">$${revenue.toFixed(0)}</div><div class="delta">from bumped tickets</div></div>
+  `;
+}
+
+/* ---------- Hour chart ---------- */
+let charts = {};
+function renderHourChart() {
+  const bumped = bumpedOrders();
+  const buckets = new Array(24).fill(0);
+  bumped.forEach(o => {
+    const h = new Date(o.createdAt).getHours();
+    buckets[h]++;
+  });
+  if (charts.hour) charts.hour.destroy();
+  charts.hour = new Chart(document.getElementById("hourChart"), {
+    type: "bar",
+    data: {
+      labels: buckets.map((_, i) => `${i.toString().padStart(2,"0")}:00`),
+      datasets: [{
+        label: "Orders",
+        data: buckets,
+        backgroundColor: "#c89560",
+        borderRadius: 4,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { font: { family: "JetBrains Mono", size: 10 }, maxRotation: 0, autoSkip: true, maxTicksLimit: 12 } },
+        y: { beginAtZero: true, ticks: { font: { family: "JetBrains Mono", size: 10 } } }
+      }
+    }
+  });
+}
+
+/* ---------- Channel donut ---------- */
+function renderChanChart() {
+  const bumped = bumpedOrders();
+  const map = {};
+  bumped.forEach(o => { map[o.channel] = (map[o.channel] || 0) + 1; });
+  const labels = Object.keys(map);
+  const data = Object.values(map);
+  const colors = { counter: "#c89560", online: "#4a90e2", uber: "#06c555", doordash: "#e8472c", phone: "#f5c542" };
+  if (charts.chan) charts.chan.destroy();
+  charts.chan = new Chart(document.getElementById("chanChart"), {
+    type: "doughnut",
+    data: {
+      labels: labels.map(l => l.charAt(0).toUpperCase() + l.slice(1)),
+      datasets: [{ data, backgroundColor: labels.map(l => colors[l] || "#888") }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      cutout: "60%",
+      plugins: {
+        legend: { position: "bottom", labels: { font: { family: "Inter", size: 12 } } }
+      }
+    }
+  });
+}
+
+/* ---------- Prep bucket chart ---------- */
+function renderPrepChart() {
+  const bumped = bumpedOrders();
+  const buckets = { fresh: 0, soon: 0, late: 0 };
+  bumped.forEach(o => {
+    const prepSec = (o.bumpedAt - o.createdAt) / 1000;
+    const target = Math.max(...o.items.map(i => i.prepMin || 3));
+    buckets[ageBucket(prepSec, target)]++;
+  });
+  if (charts.prep) charts.prep.destroy();
+  charts.prep = new Chart(document.getElementById("prepChart"), {
+    type: "bar",
+    data: {
+      labels: ["Fast (< ½ target)", "On pace (< target)", "Over target"],
+      datasets: [{
+        data: [buckets.fresh, buckets.soon, buckets.late],
+        backgroundColor: ["#5eb862", "#f5c542", "#e8472c"],
+        borderRadius: 4
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        y: { beginAtZero: true, ticks: { font: { family: "JetBrains Mono", size: 10 } } },
+        x: { ticks: { font: { family: "Inter", size: 12 } } }
+      }
+    }
+  });
+}
+
+/* ---------- Top items ---------- */
+function renderTopItems() {
+  const bumped = bumpedOrders();
+  const counts = {};
+  bumped.forEach(o => o.items.forEach(i => {
+    counts[i.name] = (counts[i.name] || 0) + i.qty;
+  }));
+  const sorted = Object.entries(counts).sort((a,b) => b[1]-a[1]).slice(0, 8);
+  const max = sorted[0]?.[1] || 1;
+
+  const host = document.getElementById("topItems");
+  if (!sorted.length) {
+    host.innerHTML = `<div class="empty-block"><div class="lg">🫘</div>No bumped items yet.</div>`;
+    return;
+  }
+  host.innerHTML = sorted.map(([name, n]) => `
+    <div style="margin: 10px 0;">
+      <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px;">
+        <span style="font-weight:600;">${name}</span>
+        <span class="mono muted">${n}</span>
+      </div>
+      <div style="height:7px;background:var(--cream);border-radius:4px;overflow:hidden;">
+        <div style="height:100%;width:${(n/max)*100}%;background:var(--crema);"></div>
+      </div>
+    </div>
+  `).join("");
+}
+
+/* ---------- Log table ---------- */
+function renderLog() {
+  const bumped = bumpedOrders().sort((a,b) => b.bumpedAt - a.bumpedAt);
+  const tbody = document.querySelector("#logTable tbody");
+  if (!bumped.length) {
+    tbody.innerHTML = `<tr><td colspan="8" class="center muted" style="padding:30px;">No bumped orders yet. Seed demo history to populate.</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = bumped.slice(0, 30).map(o => {
+    const prepSec = (o.bumpedAt - o.createdAt) / 1000;
+    const target = Math.max(...o.items.map(i => i.prepMin || 3));
+    const bucket = ageBucket(prepSec, target);
+    const t = new Date(o.createdAt);
+    const tStr = t.toLocaleTimeString("en-AU", { hour: "2-digit", minute: "2-digit" });
+    return `
+      <tr>
+        <td class="mono">#${o.num.toString().padStart(3,"0")}</td>
+        <td class="mono muted">${tStr}</td>
+        <td><span class="chan chan--${o.channel}">${o.channel}</span></td>
+        <td>${o.customer || "—"}</td>
+        <td>${o.items.map(i => `${i.qty}× ${i.name}`).join(", ")}</td>
+        <td class="mono"><span class="age-chip ${bucket}">${fmtDuration(prepSec)}</span></td>
+        <td class="mono muted">${target}m</td>
+        <td>${bucket === "late" ? "⚠ over" : bucket === "soon" ? "on pace" : "fast"}</td>
+      </tr>`;
+  }).join("");
+}
+
+function renderAll() {
+  renderKpis();
+  renderHourChart();
+  renderChanChart();
+  renderPrepChart();
+  renderTopItems();
+  renderLog();
+}
+
+/* ---------- Seed 24h of demo history ---------- */
+document.getElementById("seed-hist").addEventListener("click", seedHistory);
+document.getElementById("wipe-hist").addEventListener("click", async () => {
+  if (!confirm("Clear all orders (server + local cache)? This can't be undone.")) return;
+  await kdsApi.clearAll();
+  localStorage.removeItem(KEY);
+  localStorage.removeItem(NUM_KEY);
+  _cache = [];
+  renderAll();
+});
+
+function seedHistory() {
+  const now = Date.now();
+  const names = ["Emma","Luca","Priya","Jake","Hana","Tom","Maya","Ben","Zoe","Ari","Noah","Kai","Sofia","Ravi","Lily"];
+  const barItems = [
+    { name: "Flat White", station: "bar", prepMin: 3, priceEach: 4.80 },
+    { name: "Latte", station: "bar", prepMin: 3, priceEach: 4.80 },
+    { name: "Cappuccino", station: "bar", prepMin: 3, priceEach: 4.80 },
+    { name: "Long Black", station: "bar", prepMin: 2, priceEach: 4.50 },
+    { name: "Batch Brew", station: "bar", prepMin: 1, priceEach: 4.50 },
+    { name: "Chai Latte", station: "bar", prepMin: 3, priceEach: 5.20 },
+    { name: "Banana Bread", station: "bar", prepMin: 1, priceEach: 6.50 },
+    { name: "Muffin", station: "bar", prepMin: 1, priceEach: 5.50 },
+  ];
+  const kitItems = [
+    { name: "Smashed Avo", station: "kitchen", prepMin: 10, priceEach: 18.50 },
+    { name: "Big Brekkie", station: "kitchen", prepMin: 14, priceEach: 24.00 },
+    { name: "Eggs Benedict", station: "kitchen", prepMin: 12, priceEach: 21.00 },
+    { name: "Bacon & Egg Roll", station: "kitchen", prepMin: 6, priceEach: 11.00 },
+    { name: "Chicken Burger", station: "kitchen", prepMin: 12, priceEach: 19.50 },
+    { name: "Reuben Toastie", station: "kitchen", prepMin: 8, priceEach: 16.50 },
+  ];
+  const channels = ["counter","counter","counter","counter","online","uber","doordash","phone"];
+
+  const seeded = [];
+  let orderNum = parseInt(localStorage.getItem(NUM_KEY) || "100", 10);
+
+  // Bias order volumes toward morning (7-11) + lunch (12-14)
+  const hourWeight = h => {
+    if (h >= 7 && h <= 10) return 6;
+    if (h === 11) return 3;
+    if (h >= 12 && h <= 14) return 4;
+    if (h >= 15 && h <= 16) return 2;
+    return 1;
+  };
+
+  for (let h = 6; h < 17; h++) {
+    const n = Math.max(1, Math.round(hourWeight(h) * (2 + Math.random())));
+    for (let k = 0; k < n; k++) {
+      orderNum++;
+      const createdOffset = (now - 24 * 60 * 60 * 1000) + h * 3600000 + Math.floor(Math.random() * 3600000);
+      const pick = (arr, max) => arr[Math.floor(Math.random() * Math.min(arr.length, max))];
+
+      // 70% bar-only, 30% brunch+coffee combo
+      const wantBrunch = Math.random() < 0.35;
+      const items = [];
+      items.push({ ...pick(barItems, barItems.length), qty: 1,
+        mods: Math.random() < .3 ? ["oat"] : Math.random() < .2 ? ["decaf"] : [] });
+      if (Math.random() < .4) items.push({ ...pick(barItems, barItems.length), qty: 1, mods: [] });
+      if (wantBrunch) items.push({ ...pick(kitItems, kitItems.length), qty: 1, mods: [] });
+
+      const targetMin = Math.max(...items.map(i => i.prepMin));
+      // Realistic prep: target ± 40% with some outliers
+      let actualSec = targetMin * 60 * (0.5 + Math.random() * 0.9);
+      if (Math.random() < 0.12) actualSec *= 1.6; // occasional delay
+
+      const channel = pick(channels, channels.length);
+      seeded.push({
+        id: "ORD-" + orderNum.toString().padStart(4, "0"),
+        num: orderNum,
+        createdAt: createdOffset,
+        bumpedAt: createdOffset + actualSec * 1000,
+        channel,
+        customer: channel === "uber" ? "Uber · " + pick(names, names.length)
+                 : channel === "doordash" ? "DD · " + pick(names, names.length)
+                 : pick(names, names.length),
+        note: Math.random() < .08 ? "no coriander please" : "",
+        items,
+        status: "bumped"
+      });
+    }
+  }
+
+  const existing = load().filter(o => o.status !== "bumped");
+  save([...existing, ...seeded]);
+  localStorage.setItem(NUM_KEY, orderNum.toString());
+  renderAll();
+}
+
+/* boot */
+(async () => {
+  await refreshFromApi();
+  if (new URLSearchParams(location.search).get("seed") === "1" && bumpedOrders().length < 5) {
+    seedHistory();
+    await refreshFromApi();
+  }
+})();
+
+// Re-render when localStorage changes in another tab (demo seeds)
+window.addEventListener("storage", renderAll);
+// Also listen for live order events (bumps from the KDS) via SSE.
+kdsApi.subscribe((type) => {
+  if (type === "order.bumped" || type === "order.recalled" || type === "orders.cleared" || type === "order.created") {
+    refreshFromApi();
+  }
+});
+</script>
+</body>
+</html>

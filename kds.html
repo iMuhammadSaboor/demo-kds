@@ -1,0 +1,659 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+<title>Kitchen Display — Demo KDS</title>
+<link rel="stylesheet" href="styles.css" />
+<style>
+  /* ---------------------- KDS screen overrides ---------------------- */
+  html, body { background: #0a0604; color: #f5efe4; height: 100%; overflow: hidden; }
+  body {
+    font-family: var(--display);
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  .kds {
+    display: grid;
+    grid-template-rows: 56px 1fr 44px;
+    height: 100vh;
+  }
+
+  /* Top bar ---- */
+  .kds__bar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 18px;
+    background: #120a06;
+    border-bottom: 1px solid #2a1a10;
+  }
+  .kds__brand {
+    display: flex; align-items: center; gap: 10px;
+    font-family: var(--display); font-weight: 700; font-size: 16px;
+    letter-spacing: .02em;
+  }
+  .kds__brand b { color: var(--crema); }
+  .kds__brand::before {
+    content: ""; width: 10px; height: 10px; border-radius: 50%;
+    background: var(--crema);
+    box-shadow: 0 0 10px var(--crema);
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .4; } }
+
+  .kds__filters { display: flex; gap: 6px; }
+  .chip {
+    font-family: var(--mono); font-size: 12px;
+    padding: 6px 12px; border-radius: 999px;
+    border: 1px solid #2a1a10; color: #cbbda9;
+    background: transparent;
+    text-transform: uppercase; letter-spacing: .08em;
+    transition: background .15s, color .15s, border-color .15s;
+  }
+  .chip:hover { border-color: var(--crema); color: var(--crema); }
+  .chip.is-on {
+    background: var(--crema); color: #0f0b08;
+    border-color: var(--crema); font-weight: 600;
+  }
+
+  .kds__stats {
+    display: flex; gap: 18px; align-items: center;
+    font-family: var(--mono); font-size: 12.5px; color: #cbbda9;
+  }
+  .kds__stats b { color: var(--paper); font-weight: 600; }
+  .kds__clock { color: var(--crema); }
+
+  /* Tile grid ---- */
+  .kds__grid {
+    padding: 14px;
+    display: grid;
+    gap: 14px;
+    overflow: auto;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    grid-auto-rows: min-content;
+    align-content: start;
+  }
+  .kds__grid.dense {
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  }
+
+  /* Tile ---- */
+  .tile {
+    background: #1a0f08;
+    border: 2px solid #2a1a10;
+    border-radius: 12px;
+    overflow: hidden;
+    display: flex; flex-direction: column;
+    transition: transform .25s var(--ease), border-color .2s;
+    animation: tileIn .35s var(--ease) both;
+  }
+  @keyframes tileIn {
+    from { transform: translateY(-10px) scale(.96); opacity: 0; }
+    to   { transform: none; opacity: 1; }
+  }
+  .tile.is-bumping { animation: tileOut .3s var(--ease) forwards; }
+  @keyframes tileOut {
+    to { transform: scale(.85) translateY(-8px); opacity: 0; }
+  }
+
+  .tile__head {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 12px;
+    background: #2a1a10;
+    color: var(--paper);
+    border-bottom: 1px solid #3a261a;
+  }
+  .tile__num {
+    font-family: var(--display); font-weight: 700;
+    font-size: 22px;
+    letter-spacing: .01em;
+  }
+  .tile__num span { color: var(--crema); }
+  .tile__age {
+    font-family: var(--mono); font-weight: 600; font-size: 15px;
+    padding: 3px 10px; border-radius: 6px;
+    background: rgba(94,184,98,.22);
+    color: #a2e0a6;
+  }
+  .tile[data-age="soon"] .tile__age { background: rgba(245,197,66,.22); color: #f5d472; }
+  .tile[data-age="late"] .tile__age { background: rgba(232,71,44,.28); color: #ff8a72; }
+
+  .tile[data-age="late"] { border-color: #5a2016; animation: lateBlink 2s ease-in-out infinite; }
+  @keyframes lateBlink {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(232,71,44,0); }
+    50%      { box-shadow: 0 0 0 3px rgba(232,71,44,.28); }
+  }
+
+  .tile__meta {
+    padding: 6px 12px;
+    display: flex; justify-content: space-between; align-items: center;
+    font-family: var(--mono); font-size: 11.5px;
+    color: #cbbda9;
+    border-bottom: 1px dashed #3a261a;
+  }
+  .tile__meta .name { color: var(--paper); font-weight: 600; font-family: var(--body); font-size: 13px; }
+
+  .tile__items {
+    padding: 10px 12px;
+    flex: 1;
+    font-family: var(--body);
+    font-size: 15px;
+    display: grid;
+    gap: 6px;
+    align-content: start;
+  }
+  .line {
+    display: grid; grid-template-columns: 22px 1fr; gap: 8px;
+    color: var(--paper); font-weight: 500;
+  }
+  .line .qty {
+    font-family: var(--mono); font-weight: 700;
+    color: var(--crema);
+  }
+  .line .mods {
+    display: block;
+    font-size: 12px; color: #cbbda9; margin-top: 2px;
+    font-family: var(--body);
+  }
+  .line .mods::before { content: "↳ "; color: var(--crema-deep); }
+
+  .tile__foot {
+    display: grid; grid-template-columns: 1fr auto;
+    border-top: 1px solid #3a261a;
+  }
+  .tile__bump {
+    background: #2d7a35;
+    color: #fff;
+    font-family: var(--display); font-weight: 700;
+    font-size: 15px; letter-spacing: .05em;
+    padding: 14px 0;
+    text-transform: uppercase;
+    transition: background .15s;
+  }
+  .tile__bump:hover, .tile__bump:active { background: #3c9e45; }
+  .tile[data-age="late"] .tile__bump { background: #a8321f; }
+  .tile[data-age="late"] .tile__bump:hover { background: #c9412a; }
+  .tile__recall {
+    background: #3a261a;
+    color: #cbbda9;
+    font-family: var(--mono); font-size: 12px;
+    padding: 0 14px;
+    border-left: 1px solid #4a2e1e;
+  }
+  .tile__recall:hover { color: var(--crema); }
+
+  /* Hotkey number badge */
+  .hotkey {
+    position: absolute;
+    top: -8px; left: -8px;
+    width: 26px; height: 26px;
+    background: var(--crema); color: #0f0b08;
+    border-radius: 50%;
+    display: grid; place-items: center;
+    font-family: var(--mono); font-weight: 700; font-size: 13px;
+    box-shadow: 0 2px 0 rgba(0,0,0,.3);
+  }
+  .tile-wrap { position: relative; }
+
+  /* Empty state ---- */
+  .empty {
+    grid-column: 1 / -1;
+    display: grid; place-items: center;
+    padding: 80px 20px;
+    text-align: center;
+  }
+  .empty .big-emoji { font-size: 64px; margin-bottom: 14px; }
+  .empty h2 {
+    font-family: var(--display); font-weight: 600;
+    font-size: 22px; color: var(--paper); margin-bottom: 8px;
+  }
+  .empty p { color: #8a7b6e; margin-bottom: 22px; }
+  .empty .btn {
+    background: var(--crema); color: #0f0b08;
+    font-weight: 700;
+  }
+
+  /* Bottom bar ---- */
+  .kds__foot {
+    background: #120a06;
+    border-top: 1px solid #2a1a10;
+    padding: 0 18px;
+    display: flex; align-items: center; justify-content: space-between;
+    font-family: var(--mono); font-size: 11.5px; color: #8a7b6e;
+  }
+  .kds__foot kbd {
+    font-family: var(--mono);
+    background: #2a1a10;
+    border: 1px solid #3a261a;
+    border-radius: 4px;
+    padding: 2px 6px;
+    color: #cbbda9;
+    margin: 0 2px;
+  }
+
+  /* Toast for sound-disabled / recovery notes */
+  .toast {
+    position: fixed; left: 50%; bottom: 56px;
+    transform: translateX(-50%) translateY(20px);
+    background: var(--crema); color: #0f0b08;
+    padding: 10px 18px; border-radius: 8px;
+    font-family: var(--mono); font-size: 12.5px; font-weight: 600;
+    opacity: 0; transition: all .25s var(--ease);
+    pointer-events: none;
+    z-index: 100;
+  }
+  .toast.on { transform: translateX(-50%) translateY(0); opacity: 1; }
+
+  /* Channel chip mini */
+  .chan {
+    font-size: 10.5px; padding: 3px 6px;
+  }
+</style>
+</head>
+<body>
+
+<div class="kds">
+
+  <!-- TOP BAR -->
+  <div class="kds__bar">
+    <div class="kds__brand">KDS · <b>DEMO</b></div>
+
+    <div class="kds__filters" role="tablist" aria-label="Station filter">
+      <button class="chip is-on" data-filter="all">All</button>
+      <button class="chip" data-filter="bar">Bar</button>
+      <button class="chip" data-filter="kitchen">Kitchen</button>
+    </div>
+
+    <div class="kds__stats">
+      <span>Queue <b id="stat-count">0</b></span>
+      <span>Avg <b id="stat-avg">0:00</b></span>
+      <span>Oldest <b id="stat-oldest">0:00</b></span>
+      <span class="kds__clock" id="clock">00:00</span>
+      <button class="chip" id="btn-sound" title="Toggle sound alerts">🔔 On</button>
+    </div>
+  </div>
+
+  <!-- TILE GRID -->
+  <div class="kds__grid" id="grid">
+    <!-- tiles injected here -->
+  </div>
+
+  <!-- BOTTOM BAR -->
+  <div class="kds__foot">
+    <div>
+      <kbd>1</kbd>–<kbd>9</kbd> bump  ·  <kbd>R</kbd> recall last  ·  <kbd>F</kbd> fullscreen  ·  <kbd>S</kbd> seed demo
+    </div>
+    <div id="build-tag">v0.1 · built by Muhammad Saboor · demo-kds.local</div>
+  </div>
+</div>
+
+<div class="toast" id="toast">queued</div>
+
+<!-- Mode indicator — shows whether we're talking to the server or running local-only -->
+<div id="mode-pill" style="position:fixed;top:12px;left:12px;z-index:80;display:none;font-family:var(--mono);font-size:11px;padding:4px 9px;border-radius:999px;background:rgba(232,71,44,.9);color:#fff;">
+  OFFLINE — running in local mode
+</div>
+
+<script src="client-api.js"></script>
+<script>
+/* =========================================================
+   DEMO KDS — display logic
+   =========================================================
+   Data comes from /api/orders (via client-api.js wrapper),
+   with automatic localStorage fallback when the backend is
+   unreachable. Live updates via Server-Sent Events.
+   ========================================================= */
+
+const state = {
+  filter: "all",
+  sound: true,
+  lastBumped: null,
+  cache: [],   // current orders as returned by the server
+};
+
+// ----- data (talks to kdsApi, kept sync for the rest of the code)
+function load() { return state.cache; }
+
+async function refresh() {
+  state.cache = await kdsApi.listOrders();
+  render();
+}
+
+// ----- sound alert (Web Audio API, no mp3 needed) ----------
+let audioCtx = null;
+function ding() {
+  if (!state.sound) return;
+  try {
+    audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+    // Two-tone chime — higher then lower, very short.
+    const now = audioCtx.currentTime;
+    [880, 660].forEach((freq, i) => {
+      const o = audioCtx.createOscillator();
+      const g = audioCtx.createGain();
+      o.type = "sine";
+      o.frequency.value = freq;
+      g.gain.setValueAtTime(0, now + i * 0.15);
+      g.gain.linearRampToValueAtTime(0.18, now + i * 0.15 + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.001, now + i * 0.15 + 0.22);
+      o.connect(g); g.connect(audioCtx.destination);
+      o.start(now + i * 0.15);
+      o.stop(now + i * 0.15 + 0.25);
+    });
+  } catch (e) { /* silent */ }
+}
+
+// ----- rendering -------------------------------------------
+const grid = document.getElementById("grid");
+
+function ageBucket(minutes, maxPrep) {
+  // Bucket by prep target, not just wall time — tiles for a
+  // 12-min brekkie shouldn't go red at 3 minutes.
+  const target = Math.max(3, maxPrep || 3);
+  if (minutes < target * 0.5) return "fresh";
+  if (minutes < target) return "soon";
+  return "late";
+}
+
+function fmtMins(sec) {
+  const m = Math.floor(sec / 60).toString().padStart(1, "0");
+  const s = Math.floor(sec % 60).toString().padStart(2, "0");
+  return `${m}:${s}`;
+}
+
+function channelLabel(c) {
+  const map = {
+    counter: "Counter",
+    online: "Online",
+    uber: "Uber Eats",
+    doordash: "DoorDash",
+    phone: "Phone",
+  };
+  return map[c] || c;
+}
+
+function queued(orders) {
+  return orders
+    .filter(o => o.status === "queued")
+    .filter(o => state.filter === "all" || o.items.some(i => i.station === state.filter))
+    .sort((a, b) => a.createdAt - b.createdAt);
+}
+
+function render() {
+  const all = load();
+  const list = queued(all);
+  const now = Date.now();
+
+  grid.classList.toggle("dense", list.length > 6);
+
+  if (list.length === 0) {
+    grid.innerHTML = `
+      <div class="empty">
+        <div class="big-emoji">☕</div>
+        <h2>Queue is clear</h2>
+        <p>New orders will pop here the moment they land at the counter or online.</p>
+        <button class="btn" id="seed-btn" onclick="seedDemo()">Seed demo orders</button>
+      </div>`;
+    updateStats(list, now);
+    return;
+  }
+
+  grid.innerHTML = list.map((o, idx) => {
+    const maxPrep = Math.max(...o.items.map(i => i.prepMin || 3));
+    const elapsedSec = (now - o.createdAt) / 1000;
+    const mins = elapsedSec / 60;
+    const bucket = ageBucket(mins, maxPrep);
+    const hotkeyBadge = idx < 9 ? `<span class="hotkey">${idx + 1}</span>` : "";
+
+    return `
+      <div class="tile-wrap">
+        ${hotkeyBadge}
+        <article class="tile" data-age="${bucket}" data-id="${o.id}">
+          <div class="tile__head">
+            <div class="tile__num">#<span>${o.num.toString().padStart(3, "0")}</span></div>
+            <div class="tile__age" data-elapsed="${o.createdAt}">${fmtMins(elapsedSec)}</div>
+          </div>
+          <div class="tile__meta">
+            <span class="name">${o.customer || "Walk-in"}</span>
+            <span class="chan chan--${o.channel}">${channelLabel(o.channel)}</span>
+          </div>
+          <div class="tile__items">
+            ${o.items.map(i => `
+              <div class="line">
+                <span class="qty">${i.qty}×</span>
+                <span>
+                  ${i.name}
+                  ${i.mods && i.mods.length ? `<span class="mods">${i.mods.join(" · ")}</span>` : ""}
+                </span>
+              </div>
+            `).join("")}
+            ${o.note ? `<div class="line"><span class="qty">✎</span><span class="mods" style="color:#f5c542;margin:0;">${o.note}</span></div>` : ""}
+          </div>
+          <div class="tile__foot">
+            <button class="tile__bump" onclick="bump('${o.id}')">Bump ✓</button>
+            <button class="tile__recall" onclick="recall('${o.id}')" title="Put back on queue">↺</button>
+          </div>
+        </article>
+      </div>`;
+  }).join("");
+
+  updateStats(list, now);
+}
+
+function updateStats(list, now) {
+  document.getElementById("stat-count").textContent = list.length;
+  if (list.length === 0) {
+    document.getElementById("stat-avg").textContent = "0:00";
+    document.getElementById("stat-oldest").textContent = "0:00";
+    return;
+  }
+  const ages = list.map(o => (now - o.createdAt) / 1000);
+  const avg = ages.reduce((a,b) => a+b, 0) / ages.length;
+  const oldest = Math.max(...ages);
+  document.getElementById("stat-avg").textContent = fmtMins(avg);
+  document.getElementById("stat-oldest").textContent = fmtMins(oldest);
+}
+
+// Live-tick the age timers without re-rendering whole tiles (smooth)
+function tickTimers() {
+  const now = Date.now();
+  document.querySelectorAll(".tile").forEach(el => {
+    const id = el.getAttribute("data-id");
+    const order = load().find(o => o.id === id);
+    if (!order) return;
+    const elapsedSec = (now - order.createdAt) / 1000;
+    const ageEl = el.querySelector(".tile__age");
+    if (ageEl) ageEl.textContent = fmtMins(elapsedSec);
+    const maxPrep = Math.max(...order.items.map(i => i.prepMin || 3));
+    const bucket = ageBucket(elapsedSec / 60, maxPrep);
+    if (el.getAttribute("data-age") !== bucket) el.setAttribute("data-age", bucket);
+  });
+  // refresh counter stats too
+  const list = queued(load());
+  updateStats(list, now);
+}
+
+// ----- actions --------------------------------------------
+async function bump(id) {
+  state.lastBumped = id;
+  // Optimistic: start the bump-out animation immediately
+  const tile = document.querySelector(`.tile[data-id="${id}"]`);
+  if (tile) tile.classList.add("is-bumping");
+  // Fire to server (or localStorage fallback)
+  const updated = await kdsApi.bumpOrder(id);
+  if (updated) {
+    const i = state.cache.findIndex(o => o.id === id);
+    if (i > -1) state.cache[i] = updated;
+  }
+  setTimeout(render, 260);
+  toast(`Order ${id.replace(/^.*-/, "")} bumped`);
+}
+
+async function recall(id) {
+  const updated = await kdsApi.recallOrder(id);
+  if (updated) {
+    const i = state.cache.findIndex(o => o.id === id);
+    if (i > -1) state.cache[i] = updated;
+    else state.cache.push(updated);
+  }
+  render();
+  toast("Order recalled to top");
+}
+
+async function recallLast() {
+  const all = load();
+  const bumped = all.filter(o => o.status === "bumped").sort((a,b) => (b.bumpedAt||0) - (a.bumpedAt||0));
+  if (!bumped.length) { toast("No order to recall"); return; }
+  await recall(bumped[0].id);
+}
+
+// ----- demo seed -------------------------------------------
+async function seedDemo() {
+  const now = Date.now();
+  const specs = [
+    { createdAt: now - 60_000 * 1, channel: "counter", customer: "Emma", note: "",
+      items: [
+        { qty: 1, name: "Flat White", station: "bar", mods: ["oat"], prepMin: 3 },
+        { qty: 1, name: "Banana Bread", station: "bar", mods: ["toasted + butter"], prepMin: 1 }
+      ] },
+    { createdAt: now - 60_000 * 4, channel: "counter", customer: "Luca", note: "",
+      items: [
+        { qty: 1, name: "Smashed Avo", station: "kitchen", mods: ["+ poached egg"], prepMin: 10 },
+        { qty: 1, name: "Latte", station: "bar", mods: ["decaf"], prepMin: 3 }
+      ] },
+    { createdAt: now - 60_000 * 8, channel: "online", customer: "Priya", note: "nuts allergy!",
+      items: [
+        { qty: 2, name: "Cappuccino", station: "bar", mods: [], prepMin: 3 },
+        { qty: 1, name: "Eggs Benedict", station: "kitchen", mods: ["smoked salmon"], prepMin: 12 }
+      ] },
+    { createdAt: now - 30_000, channel: "counter", customer: "Jake", note: "",
+      items: [
+        { qty: 1, name: "Bacon & Egg Roll", station: "kitchen", mods: ["bbq"], prepMin: 6 },
+        { qty: 1, name: "Long Black", station: "bar", mods: ["large"], prepMin: 2 }
+      ] },
+    { createdAt: now - 60_000 * 2, channel: "uber", customer: "Uber Eats · Sam", note: "",
+      items: [
+        { qty: 1, name: "Chicken Burger", station: "kitchen", mods: ["no onion"], prepMin: 12 },
+        { qty: 1, name: "Cold Brew", station: "bar", mods: [], prepMin: 1 }
+      ] },
+  ];
+  for (const s of specs) await kdsApi.createOrder(s);
+  await refresh();
+  toast("Seeded 5 demo orders");
+  ding();
+}
+window.seedDemo = seedDemo;
+window.bump = bump;
+window.recall = recall;
+
+// ----- toast ----------------------------------------------
+let toastTimer;
+function toast(msg) {
+  const el = document.getElementById("toast");
+  el.textContent = msg;
+  el.classList.add("on");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove("on"), 1800);
+}
+
+// ----- wiring ---------------------------------------------
+function wire() {
+  // Filter chips
+  document.querySelectorAll(".chip[data-filter]").forEach(btn => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll(".chip[data-filter]").forEach(b => b.classList.remove("is-on"));
+      btn.classList.add("is-on");
+      state.filter = btn.getAttribute("data-filter");
+      render();
+    });
+  });
+
+  // Sound toggle
+  document.getElementById("btn-sound").addEventListener("click", e => {
+    state.sound = !state.sound;
+    e.currentTarget.textContent = state.sound ? "🔔 On" : "🔕 Off";
+    e.currentTarget.classList.toggle("is-on", state.sound);
+    if (state.sound) ding();
+  });
+
+  // Keyboard shortcuts
+  window.addEventListener("keydown", e => {
+    if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA") return;
+    const k = e.key.toLowerCase();
+    if (k >= "1" && k <= "9") {
+      const idx = parseInt(k, 10) - 1;
+      const list = queued(load());
+      if (list[idx]) bump(list[idx].id);
+    } else if (k === "r") {
+      recallLast();
+    } else if (k === "f") {
+      toggleFullscreen();
+    } else if (k === "s") {
+      seedDemo();
+    }
+  });
+
+  // Subscribe to the unified stream (Server-Sent Events from the
+  // backend + cross-tab localStorage events as fallback).
+  kdsApi.subscribe(async (type, data) => {
+    if (type === "order.created") {
+      await refresh();
+      ding();
+    } else if (type === "order.bumped" || type === "order.recalled" || type === "orders.cleared") {
+      await refresh();
+    } else if (type === "local.change") {
+      await refresh();
+    } else if (type === "connected") {
+      await refresh();
+    }
+  });
+
+  // Update the mode pill when online/offline flips
+  window.addEventListener("kdsapi:mode", () => updateModePill());
+
+  // Re-render when window regains focus (defensive)
+  window.addEventListener("focus", refresh);
+}
+
+function updateModePill() {
+  const pill = document.getElementById("mode-pill");
+  if (!pill) return;
+  if (kdsApi.mode === "local") {
+    pill.style.display = "block";
+    pill.textContent = "OFFLINE — local mode (backend not reachable)";
+  } else {
+    pill.style.display = "none";
+  }
+}
+
+function toggleFullscreen() {
+  if (!document.fullscreenElement) document.documentElement.requestFullscreen?.();
+  else document.exitFullscreen?.();
+}
+
+function clock() {
+  const d = new Date();
+  const h = d.getHours().toString().padStart(2, "0");
+  const m = d.getMinutes().toString().padStart(2, "0");
+  document.getElementById("clock").textContent = `${h}:${m}`;
+}
+
+// ----- boot -----------------------------------------------
+wire();
+
+(async () => {
+  await kdsApi.checkHealth();
+  updateModePill();
+  await refresh();
+  // Auto-seed for screenshots / pitches — /kds.html?seed=1
+  if (new URLSearchParams(location.search).get("seed") === "1" &&
+      queued(load()).length < 3) {
+    await seedDemo();
+  }
+})();
+
+clock();
+setInterval(tickTimers, 1000);
+setInterval(clock, 15000);
+</script>
+</body>
+</html>

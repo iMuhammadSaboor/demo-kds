@@ -1,0 +1,69 @@
+{
+  "categories": [
+    {
+      "id": "coffee",
+      "name": "Coffee",
+      "station": "bar",
+      "items": [
+        { "id": "esp", "name": "Espresso", "price": 4.00, "prepMin": 2, "mods": ["single","double"] },
+        { "id": "mac", "name": "Macchiato", "price": 4.20, "prepMin": 2, "mods": ["single","double"] },
+        { "id": "pic", "name": "Piccolo", "price": 4.50, "prepMin": 2 },
+        { "id": "fw",  "name": "Flat White", "price": 4.80, "prepMin": 3, "mods": ["regular","large","decaf","oat","soy","almond","extra shot"] },
+        { "id": "lat", "name": "Latte", "price": 4.80, "prepMin": 3, "mods": ["regular","large","decaf","oat","soy","almond","extra shot"] },
+        { "id": "cap", "name": "Cappuccino", "price": 4.80, "prepMin": 3, "mods": ["regular","large","decaf","oat","soy","almond"] },
+        { "id": "moc", "name": "Mocha", "price": 5.20, "prepMin": 4, "mods": ["regular","large","oat","soy"] },
+        { "id": "lon", "name": "Long Black", "price": 4.50, "prepMin": 2, "mods": ["regular","large"] },
+        { "id": "bat", "name": "Batch Brew", "price": 4.50, "prepMin": 1 },
+        { "id": "cold","name": "Cold Brew", "price": 5.50, "prepMin": 1 }
+      ]
+    },
+    {
+      "id": "non-coffee",
+      "name": "Non-Coffee",
+      "station": "bar",
+      "items": [
+        { "id": "cha", "name": "Chai Latte", "price": 5.20, "prepMin": 3, "mods": ["oat","soy","almond"] },
+        { "id": "mat", "name": "Matcha Latte", "price": 5.80, "prepMin": 3, "mods": ["oat","soy","almond","iced"] },
+        { "id": "hoc", "name": "Hot Chocolate", "price": 5.00, "prepMin": 3, "mods": ["dark","white","marshmallow"] },
+        { "id": "tea", "name": "T2 Pot Tea", "price": 5.50, "prepMin": 2 }
+      ]
+    },
+    {
+      "id": "brunch",
+      "name": "Brunch",
+      "station": "kitchen",
+      "items": [
+        { "id": "avo", "name": "Smashed Avo", "price": 18.50, "prepMin": 10, "mods": ["+ poached egg","+ halloumi","+ bacon","GF bread"] },
+        { "id": "ebn", "name": "Eggs Benedict", "price": 21.00, "prepMin": 12, "mods": ["ham","smoked salmon","spinach","GF bread"] },
+        { "id": "bigb","name": "Big Brekkie", "price": 24.00, "prepMin": 14, "mods": ["no tomato","no mushroom","GF bread"] },
+        { "id": "pan", "name": "Buttermilk Pancakes", "price": 19.00, "prepMin": 11, "mods": ["+ banana","+ bacon"] },
+        { "id": "gra", "name": "House Granola", "price": 14.50, "prepMin": 4, "mods": ["dairy-free yoghurt"] },
+        { "id": "toa", "name": "Sourdough Toast", "price": 8.00, "prepMin": 3, "mods": ["butter","jam","vegemite","peanut butter","GF bread"] }
+      ]
+    },
+    {
+      "id": "lunch",
+      "name": "Lunch",
+      "station": "kitchen",
+      "items": [
+        { "id": "bur", "name": "Chicken Burger", "price": 19.50, "prepMin": 12, "mods": ["no onion","extra sauce","GF bun"] },
+        { "id": "ree", "name": "Reuben Toastie", "price": 16.50, "prepMin": 8, "mods": ["no pickle","GF bread"] },
+        { "id": "ceb", "name": "Caesar Bowl", "price": 17.50, "prepMin": 8, "mods": ["no anchovy","+ chicken","+ bacon"] },
+        { "id": "rol", "name": "Bacon & Egg Roll", "price": 11.00, "prepMin": 6, "mods": ["bbq","tomato","chilli jam","GF bun"] },
+        { "id": "sou", "name": "Soup of the Day", "price": 13.50, "prepMin": 4 }
+      ]
+    },
+    {
+      "id": "cakes",
+      "name": "Cabinet",
+      "station": "bar",
+      "items": [
+        { "id": "mou", "name": "Muffin", "price": 5.50, "prepMin": 1 },
+        { "id": "cro", "name": "Croissant", "price": 6.00, "prepMin": 1, "mods": ["ham & cheese warmed"] },
+        { "id": "ban", "name": "Banana Bread", "price": 6.50, "prepMin": 1, "mods": ["toasted + butter"] },
+        { "id": "bro", "name": "Brownie", "price": 6.00, "prepMin": 1 },
+        { "id": "sli", "name": "Caramel Slice", "price": 6.00, "prepMin": 1 }
+      ]
+    }
+  ]
+}

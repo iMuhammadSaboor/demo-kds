@@ -1,0 +1,446 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Demo KDS — Kitchen Display System prototype</title>
+<meta name="description" content="A portfolio Kitchen Display System prototype. Node + vanilla JS + SSE + Square webhooks. Built from scratch by Muhammad Saboor — replaces paper dockets with a tablet-based live order display." />
+<link rel="stylesheet" href="styles.css" />
+<style>
+  .hero-kit {
+    display: grid; grid-template-columns: 1.1fr .9fr; gap: 60px;
+    align-items: center; margin-top: 30px;
+  }
+  @media (max-width: 900px) { .hero-kit { grid-template-columns: 1fr; gap: 30px; } }
+
+  /* Mock tablet showing the KDS preview */
+  .tablet {
+    background: #0a0604;
+    border: 12px solid #1a0f08;
+    border-radius: 22px;
+    box-shadow: 0 20px 50px rgba(15,11,8,.25), 0 0 0 1px rgba(200,149,96,.15);
+    padding: 12px;
+    overflow: hidden;
+    min-height: 380px;
+    position: relative;
+  }
+  .tablet::before {
+    content: "";
+    position: absolute; left: 50%; top: -4px;
+    transform: translateX(-50%);
+    width: 40px; height: 3px; background: #2a1a10;
+    border-radius: 3px;
+  }
+  .tablet__bar {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 6px 8px; font-family: var(--mono); font-size: 10px;
+    color: #cbbda9;
+  }
+  .tablet__bar b { color: var(--crema); }
+  .tablet__grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 6px;
+  }
+  .mini-tile {
+    background: #1a0f08;
+    border: 2px solid #2a1a10;
+    border-radius: 8px;
+    padding: 8px;
+    font-size: 11px;
+    color: var(--paper);
+  }
+  .mini-tile[data-age="late"] { border-color: #5a2016; }
+  .mini-tile .num {
+    font-family: var(--display); font-weight: 700; font-size: 14px;
+    color: var(--crema);
+    display: flex; justify-content: space-between; margin-bottom: 4px;
+  }
+  .mini-tile .num .age {
+    font-family: var(--mono); font-size: 11px;
+    padding: 1px 6px; border-radius: 4px;
+    background: rgba(94,184,98,.22); color: #a2e0a6;
+  }
+  .mini-tile[data-age="late"] .age {
+    background: rgba(232,71,44,.28); color: #ff8a72;
+  }
+  .mini-tile .li {
+    font-size: 10.5px; color: var(--paper); opacity: .85;
+    margin: 2px 0;
+  }
+  .mini-tile .bump {
+    margin-top: 6px;
+    background: #2d7a35; color: #fff;
+    text-align: center; font-family: var(--display);
+    font-weight: 700; font-size: 10.5px;
+    padding: 5px; border-radius: 4px;
+    text-transform: uppercase;
+  }
+  .mini-tile[data-age="late"] .bump { background: #a8321f; }
+
+  /* Pain/fix list */
+  .painlist {
+    display: grid; gap: 14px;
+  }
+  .paindiff {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 0; border-radius: 12px; overflow: hidden;
+    border: 1px solid var(--line);
+  }
+  .paindiff > div { padding: 18px 22px; }
+  .paindiff .pain {
+    background: rgba(232,71,44,.07);
+    border-right: 1px solid var(--line);
+  }
+  .paindiff .fix {
+    background: rgba(94,184,98,.08);
+  }
+  .paindiff h4 {
+    font-family: var(--mono); font-size: 11px;
+    text-transform: uppercase; letter-spacing: .08em;
+    margin-bottom: 6px;
+  }
+  .paindiff .pain h4 { color: #b03418; }
+  .paindiff .fix h4 { color: #2d7a35; }
+  .paindiff p { font-size: 14.5px; line-height: 1.5; }
+  @media (max-width: 720px) {
+    .paindiff { grid-template-columns: 1fr; }
+    .paindiff .pain { border-right: 0; border-bottom: 1px solid var(--line); }
+  }
+
+  /* Stack step list */
+  .steps {
+    display: grid; gap: 12px;
+    counter-reset: step;
+  }
+  .step {
+    display: grid;
+    grid-template-columns: 40px 1fr;
+    gap: 16px;
+    padding: 18px 0;
+    border-top: 1px solid var(--line);
+  }
+  .step:first-child { border-top: 0; }
+  .step::before {
+    counter-increment: step;
+    content: "0" counter(step);
+    font-family: var(--mono); font-weight: 700; font-size: 14px;
+    color: var(--crema-deep);
+  }
+  .step h3 { font-family: var(--display); font-size: 18px; margin-bottom: 4px; }
+  .step p { color: #6a5c4f; font-size: 14.5px; }
+
+  /* story block */
+  .story {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 40px;
+    padding: 50px 0; align-items: center;
+  }
+  @media (max-width: 820px) { .story { grid-template-columns: 1fr; gap: 24px; } }
+  .story blockquote {
+    font-family: var(--display); font-weight: 600;
+    font-size: 22px; line-height: 1.35;
+    color: var(--paper);
+    border-left: 3px solid var(--crema); padding-left: 20px;
+  }
+  .story blockquote cite {
+    display: block; font-family: var(--body); font-weight: 500;
+    font-size: 13px; font-style: normal;
+    color: #cbbda9; margin-top: 12px;
+  }
+  .story .review-stars { color: var(--crema); font-size: 18px; margin-bottom: 8px; }
+
+  /* Spec grid */
+  .spec {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 18px;
+  }
+  .spec-item {
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 16px;
+    background: var(--paper);
+  }
+  .spec-item .k {
+    font-family: var(--mono); font-size: 10.5px;
+    text-transform: uppercase; letter-spacing: .08em;
+    color: var(--crema-deep); margin-bottom: 4px;
+  }
+  .spec-item .v {
+    font-weight: 600; font-size: 14.5px;
+  }
+  .spec-item .d { font-size: 12.5px; color: #8a7b6e; margin-top: 4px; }
+</style>
+</head>
+<body>
+
+<header class="nav">
+  <div class="wrap nav__inner">
+    <a href="/" class="brand" aria-current="page"><span class="brand__dot"></span>Demo KDS</a>
+    <nav class="nav__links">
+      <a href="/">Overview</a>
+      <a href="/kds.html">KDS</a>
+      <a href="/counter.html">Counter</a>
+      <a href="/history.html">History</a>
+      <a href="/settings.html">Settings</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+
+  <!-- ========== HERO ========== -->
+  <section class="hero">
+    <div class="wrap">
+      <span class="eyebrow">☕ Portfolio demo · built from scratch</span>
+      <div class="hero-kit">
+        <div>
+          <h1 class="display">A Kitchen Display System for busy cafes.</h1>
+          <p class="lede">
+            Paper dockets fall over during the rush — tickets get buried, orders get forgotten, waits stretch past 15 minutes for a flat white that should have been out in three. This is a working KDS prototype that replaces paper with a live tablet screen, wired to Square's order webhooks.
+          </p>
+          <div class="btn-row">
+            <a class="btn btn--primary" href="/kds.html" target="_blank">Open the live KDS →</a>
+            <a class="btn btn--ghost" href="/counter.html" target="_blank">Try the counter terminal</a>
+          </div>
+          <p class="tiny muted" style="margin-top: 16px;">
+            Tip: open both tabs side-by-side. Fire an order on the counter → it lands on the KDS instantly, with a chime.
+          </p>
+        </div>
+
+        <!-- Tablet preview -->
+        <div>
+          <div class="tablet" aria-hidden="true">
+            <div class="tablet__bar">
+              <span>KDS · <b>DEMO</b></span>
+              <span>Queue 4 · Avg 3:42</span>
+            </div>
+            <div class="tablet__grid">
+              <div class="mini-tile" data-age="fresh">
+                <div class="num">#042 <span class="age">0:38</span></div>
+                <div class="li">1× Flat White · oat</div>
+                <div class="li">1× Banana Bread</div>
+                <div class="bump">Bump ✓</div>
+              </div>
+              <div class="mini-tile" data-age="soon">
+                <div class="num">#043 <span class="age" style="background:rgba(245,197,66,.22);color:#f5d472;">4:12</span></div>
+                <div class="li">1× Smashed Avo</div>
+                <div class="li">1× Latte · decaf</div>
+                <div class="bump" style="background:#2d7a35;">Bump ✓</div>
+              </div>
+              <div class="mini-tile" data-age="late">
+                <div class="num">#044 <span class="age">8:21</span></div>
+                <div class="li">2× Cappuccino</div>
+                <div class="li">1× Eggs Benedict</div>
+                <div class="bump">Bump ✓</div>
+              </div>
+              <div class="mini-tile" data-age="fresh">
+                <div class="num">#045 <span class="age">0:11</span></div>
+                <div class="li">1× Bacon &amp; Egg Roll</div>
+                <div class="li">1× Long Black</div>
+                <div class="bump">Bump ✓</div>
+              </div>
+            </div>
+          </div>
+          <p class="tiny muted center" style="margin-top: 12px;">
+            Same UI the kitchen sees. Color tells you how long a ticket has been sitting.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== PAIN / FIX ========== -->
+  <section class="section">
+    <div class="wrap">
+      <span class="eyebrow">What this fixes</span>
+      <h2>Paper dockets are killing our rush.</h2>
+      <p class="section__lede">Three real things that happen every week, and how this KDS addresses each.</p>
+
+      <div class="painlist">
+        <div class="paindiff">
+          <div class="pain">
+            <h4>Today</h4>
+            <p><b>Tickets get buried.</b> The printer spits a docket, it lands under two others, by the time the cook sees it we're ten minutes behind. Customer's stood there since minute one.</p>
+          </div>
+          <div class="fix">
+            <h4>With the KDS</h4>
+            <p><b>Every order is always on screen.</b> Oldest on top. Red border + pulse the moment it passes its prep target. No docket ever gets forgotten — there is no docket.</p>
+          </div>
+        </div>
+
+        <div class="paindiff">
+          <div class="pain">
+            <h4>Today</h4>
+            <p><b>No one knows how late "late" is.</b> The cook guesses. The customer asks twice. Sometimes you make a second one because the first got lost in the pile.</p>
+          </div>
+          <div class="fix">
+            <h4>With the KDS</h4>
+            <p><b>Per-ticket timer, colour-coded by prep target.</b> A 12-min brekkie isn't "late" at 4 minutes — a 3-min flat white is. The screen knows the difference.</p>
+          </div>
+        </div>
+
+        <div class="paindiff">
+          <div class="pain">
+            <h4>Today</h4>
+            <p><b>Nothing gets logged.</b> When a ticket's made, docket goes in the bin. We have zero data on prep times, busy hours, what gets re-made.</p>
+          </div>
+          <div class="fix">
+            <h4>With the KDS</h4>
+            <p><b>Every bump is timestamped.</b> The history page shows avg prep time, on-time rate, orders by hour, top items. First week you'll know exactly when to pull a second barista on.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== HOW IT WORKS ========== -->
+  <section class="section section--cream">
+    <div class="wrap">
+      <span class="eyebrow">How it works</span>
+      <h2>A tablet on the pass. A laptop at the counter. Done.</h2>
+      <p class="section__lede">No new hardware beyond one tablet. The counter fires orders from any device with a browser.</p>
+
+      <div class="steps">
+        <div class="step">
+          <div>
+            <h3>Mount a tablet on the pass.</h3>
+            <p>Android, iPad, anything with a browser. Open <code class="mono">/kds.html</code> full-screen. That's it — no app install.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div>
+            <h3>Open the counter terminal on the POS laptop.</h3>
+            <p>Tap items by category, pick mods (oat, decaf, no onion), add a customer name, tap <b>Send to Kitchen</b>. Ticket pops on the tablet with a chime.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div>
+            <h3>Cook bumps when done.</h3>
+            <p>Tap the green bump bar, or press the hotkey number on a Bluetooth keypad. Tile animates out. Order moves to history with its prep time logged.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div>
+            <h3>Review the day on the history page.</h3>
+            <p>KPIs, by-hour chart, channel mix, prep-time distribution, bumped-order log. Everything the old paper system never captured.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div>
+            <h3>Later: wire it to Square / Uber / DoorDash.</h3>
+            <p>The queue is a simple JSON log — Square's order webhook pushes into it, Uber Eats webhook pushes into it, the cafe's own online page POSTs into it. One screen, every channel.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== STORY ========== -->
+  <section class="section section--dark">
+    <div class="wrap">
+      <div class="story">
+        <div>
+          <span class="eyebrow">Why I built this</span>
+          <h2 style="margin-top: 14px; color: var(--paper);">Built by someone who's worked the rush.</h2>
+          <p style="color: rgba(245,239,228,.8); max-width: 50ch; margin-top: 10px;">
+            Paper ticket systems are fine for 10 orders in a morning — they fall over at 40. Commercial KDS products cost $25/month per device and still don't fit how a small cafe actually works. I wanted to show what a KDS <em>actually</em> looks like, running on hardware a cafe already owns, tailored to a real kitchen.
+          </p>
+          <p style="color: rgba(245,239,228,.8); max-width: 50ch; margin-top: 14px;">
+            This is a working prototype, not a pitch deck. Open it. Use it. Break it. It speaks Square's real order webhooks out of the box — sandbox today, production tomorrow.
+          </p>
+        </div>
+        <div>
+          <div class="review-stars">★★★★★</div>
+          <blockquote>
+            Paper dockets get buried. Half-made orders pile up. Every busy cafe knows the feeling — a flat white that should take three minutes stretches to fifteen because the ticket slipped off the pass.
+            <cite>— the problem this KDS is built to fix</cite>
+          </blockquote>
+          <p class="tiny" style="color: rgba(245,239,228,.55); margin-top: 14px;">
+            Oldest ticket on top. Prep target per item. Red pulse when a ticket goes late. No docket ever gets forgotten — there is no docket.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== TECH ========== -->
+  <section class="section">
+    <div class="wrap">
+      <span class="eyebrow">Under the hood</span>
+      <h2>Boring stack, on purpose.</h2>
+      <p class="section__lede">Built with the idea that a cafe owner shouldn't need a DevOps engineer to keep it running.</p>
+
+      <div class="spec">
+        <div class="spec-item">
+          <div class="k">Frontend</div>
+          <div class="v">Vanilla HTML + JS</div>
+          <div class="d">No framework. No build step. Runs in any browser.</div>
+        </div>
+        <div class="spec-item">
+          <div class="k">Server</div>
+          <div class="v">Zero-dep Node</div>
+          <div class="d">One file, 70 lines. <code class="mono">node serve.mjs</code>.</div>
+        </div>
+        <div class="spec-item">
+          <div class="k">Data</div>
+          <div class="v">localStorage + JSON log</div>
+          <div class="d">Swap for Postgres at go-live. Schema already matches.</div>
+        </div>
+        <div class="spec-item">
+          <div class="k">Cross-tab sync</div>
+          <div class="v">storage events</div>
+          <div class="d">Counter → KDS in the same browser instantly. WebSocket later.</div>
+        </div>
+        <div class="spec-item">
+          <div class="k">Sound</div>
+          <div class="v">Web Audio API</div>
+          <div class="d">No mp3 file needed. Two-tone chime, software-generated.</div>
+        </div>
+        <div class="spec-item">
+          <div class="k">Charts</div>
+          <div class="v">Chart.js 4</div>
+          <div class="d">One CDN link. Pin to local at go-live.</div>
+        </div>
+        <div class="spec-item">
+          <div class="k">Typography</div>
+          <div class="v">Space Grotesk + Inter</div>
+          <div class="d">Google Fonts. Mono for data.</div>
+        </div>
+        <div class="spec-item">
+          <div class="k">Total size</div>
+          <div class="v">~48 KB uncompressed</div>
+          <div class="d">Loads on any kitchen wifi, instantly.</div>
+        </div>
+      </div>
+
+      <div class="center" style="margin-top: 40px;">
+        <a class="btn btn--crema" href="/kds.html" target="_blank">Try the KDS →</a>
+        <a class="btn btn--ghost" href="/history.html">See analytics</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== CTA ========== -->
+  <section class="section section--cream">
+    <div class="wrap center">
+      <span class="eyebrow">Get in touch</span>
+      <h2 style="margin-top: 14px;">Want to see it run on a real kitchen shift?</h2>
+      <p class="section__lede" style="margin: 10px auto 0;">
+        Happy to walk through the architecture, the Square webhook wiring, or run a live demo against a sandbox order. Portfolio piece, open to conversation.
+      </p>
+      <div class="btn-row" style="justify-content:center;">
+        <a class="btn btn--primary" href="mailto:bmuhammadsaboor@gmail.com?subject=Demo%20KDS%20inquiry">Email Saboor</a>
+        <a class="btn btn--ghost" href="/kds.html" target="_blank">Or just open the demo</a>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer class="footer">
+  <div class="wrap footer__row">
+    <div>© Demo KDS · portfolio prototype · <a href="mailto:bmuhammadsaboor@gmail.com">bmuhammadsaboor@gmail.com</a></div>
+    <div class="mono tiny">v0.1 · built locally, runs locally</div>
+  </div>
+</footer>
+
+</body>
+</html>

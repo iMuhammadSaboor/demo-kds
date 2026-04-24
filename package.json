@@ -1,0 +1,17 @@
+{
+  "name": "demo-kds",
+  "version": "0.1.0",
+  "description": "Demo Kitchen Display System — Node + vanilla JS + SSE + Square webhook integration. Portfolio piece by Muhammad Saboor.",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "start": "node --env-file=.env server.mjs",
+    "dev": "node server.mjs",
+    "fire-test": "node scripts/fire-test-order.mjs",
+    "seed-square-catalog": "node --env-file=.env scripts/seed-square-catalog.mjs",
+    "clear": "curl -X DELETE http://localhost:4000/api/orders",
+    "health": "curl -s http://localhost:4000/api/health"
+  },
+  "author": "Muhammad Saboor <bmuhammadsaboor@gmail.com>",
+  "license": "UNLICENSED"
+}
