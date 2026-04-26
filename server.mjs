@@ -19,10 +19,14 @@ import { readFile, writeFile, rename, mkdir, stat } from "node:fs/promises";
 import { extname, join, normalize, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import crypto from "node:crypto";
+import { verifySquareSig as verifySig } from "./lib/hmac.mjs";
 
 const ROOT = resolve(fileURLToPath(new URL(".", import.meta.url)));
 const PORT = Number(process.env.PORT) || 4000;
-const DATA_DIR = join(ROOT, "data");
+// DATA_DIR can be overridden so tests use a temp dir and don't trash live data.
+const DATA_DIR = process.env.DATA_DIR
+  ? resolve(process.env.DATA_DIR)
+  : join(ROOT, "data");
 const DATA_FILE = join(DATA_DIR, "orders.json");
 
 const SQ_ENV    = process.env.SQUARE_ENV || "sandbox";
@@ -200,18 +204,11 @@ async function fetchSquareOrder(orderId) {
   return body.order;
 }
 
+// Thin wrapper around the pure verifier in lib/hmac.mjs so we can
+// keep the env-var coupling local to server.mjs and unit-test the
+// crypto logic separately.
 function verifySquareSig(rawBody, sigHeader) {
-  if (!SQ_SIG || !SQ_HOOK) return false;
-  if (!sigHeader) return false;
-  const expected = crypto
-    .createHmac("sha256", SQ_SIG)
-    .update(SQ_HOOK + rawBody)
-    .digest("base64");
-  // Timing-safe compare
-  const a = Buffer.from(sigHeader, "utf8");
-  const b = Buffer.from(expected, "utf8");
-  if (a.length !== b.length) return false;
-  return crypto.timingSafeEqual(a, b);
+  return verifySig(rawBody, sigHeader, SQ_SIG, SQ_HOOK);
 }
 
 // -----------------------------------------------------------

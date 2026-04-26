@@ -1,5 +1,9 @@
 # Demo KDS
 
+[![CI](https://github.com/iMuhammadSaboor/demo-kds/actions/workflows/ci.yml/badge.svg)](https://github.com/iMuhammadSaboor/demo-kds/actions/workflows/ci.yml)
+[![Node](https://img.shields.io/badge/node-%E2%89%A520-blue)](#)
+[![Deps](https://img.shields.io/badge/runtime%20deps-zero-brightgreen)](#)
+
 A portfolio Kitchen Display System prototype — tablet-optimised live order display for a busy cafe, wired to Square's real order webhooks.
 
 Zero runtime dependencies beyond Node.js 20+. One static server, one webhook server, vanilla HTML/CSS/JS on the client. No framework, no build step.
@@ -43,9 +47,23 @@ node --env-file=.env server.mjs
 # open http://localhost:4000
 ```
 
-Node 20+ required (uses ESM, built-in `fetch`, and `--env-file`). No `npm install` needed.
+Node 20+ required (uses ESM, built-in `fetch`, and `--env-file`). The runtime is zero-dep — `npm install` only fetches the dev test runner.
 
 Copy `.env.example` → `.env` and fill in the Square sandbox values before starting. See [SETUP.md](./SETUP.md) for the full wiring.
+
+## Tests
+
+```bash
+npm install        # one-time, fetches vitest
+npm test           # 21 tests · ~700ms
+```
+
+The test suite covers two layers:
+
+- **Unit tests** (`tests/hmac.test.mjs`) — 9 tests on the Square HMAC-SHA256 webhook signature verifier (`lib/hmac.mjs`). Covers valid signatures, body tampering, URL tampering, missing headers, wrong keys.
+- **Integration tests** (`tests/api.test.mjs`) — 12 tests against a real `server.mjs` instance booted on a temp port + temp data dir. Covers the counter→KDS REST flow, bump/recall, the admin auth gate on `DELETE /api/orders` and `/settings.html`, and the Square webhook signature gate (good sig accepted, bad sig rejected, missing sig rejected).
+
+CI runs the full suite on every push against Node 20 and 22 (see `.github/workflows/ci.yml`).
 
 ## Routes
 

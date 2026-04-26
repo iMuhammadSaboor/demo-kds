@@ -7,10 +7,18 @@
   "scripts": {
     "start": "node --env-file=.env server.mjs",
     "dev": "node server.mjs",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "fire-test": "node scripts/fire-test-order.mjs",
     "seed-square-catalog": "node --env-file=.env scripts/seed-square-catalog.mjs",
     "clear": "curl -X DELETE http://localhost:4000/api/orders",
     "health": "curl -s http://localhost:4000/api/health"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "devDependencies": {
+    "vitest": "^2.1.4"
   },
   "author": "Muhammad Saboor <bmuhammadsaboor@gmail.com>",
   "license": "UNLICENSED"

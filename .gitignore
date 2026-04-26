@@ -7,3 +7,7 @@ data/orders.json
 *.log
 .DS_Store
 Thumbs.db
+
+# Personal application materials (kept locally, not part of the public repo)
+cv.html
+Muhammad-Saboor-CV.pdf
