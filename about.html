@@ -1,0 +1,340 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Muhammad Saboor — Web Developer (Melbourne)</title>
+<meta name="description" content="Final-year Data Science student at VU Footscray. Builds and ships production web applications — Node, vanilla JS, real API integrations. Looking for full-time web developer roles in Melbourne." />
+<link rel="stylesheet" href="styles.css" />
+<style>
+  /* About-page-specific layout */
+  .about-hero {
+    padding: 80px 0 40px;
+    background:
+      radial-gradient(800px 400px at 80% 0%, rgba(200,149,96,.12), transparent 60%),
+      linear-gradient(180deg, var(--paper), var(--cream));
+    border-bottom: 1px solid var(--line);
+  }
+  .about-hero .wrap { max-width: 980px; }
+  .about-hero h1 {
+    font-family: var(--display); font-weight: 700;
+    font-size: clamp(36px, 5vw, 56px);
+    line-height: 1.05; letter-spacing: -.02em;
+    margin: 18px 0 18px;
+  }
+  .about-hero h1 .accent { color: var(--crema-deep); }
+  .about-hero .lede {
+    font-size: 19px; color: #4a3d32; max-width: 60ch;
+  }
+  .about-hero .meta {
+    display: flex; flex-wrap: wrap; gap: 18px;
+    margin-top: 28px; font-family: var(--mono); font-size: 13px;
+    color: #6a5c4f;
+  }
+  .about-hero .meta span::before {
+    content: "■ "; color: var(--crema); margin-right: 4px;
+  }
+
+  /* Featured project card */
+  .featured {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    padding: 32px;
+    margin: 50px 0;
+    box-shadow: 0 1px 0 rgba(0,0,0,.02);
+  }
+  .featured__head {
+    display: grid; grid-template-columns: 1fr auto;
+    gap: 24px; align-items: end; margin-bottom: 24px;
+    border-bottom: 1px solid var(--line); padding-bottom: 22px;
+  }
+  .featured__head h2 {
+    font-family: var(--display); font-weight: 700;
+    font-size: 28px; letter-spacing: -.015em;
+  }
+  .featured__head .pill {
+    font-family: var(--mono); font-size: 11px;
+    text-transform: uppercase; letter-spacing: .08em;
+    background: rgba(94,184,98,.16); color: #2d7a35;
+    padding: 6px 12px; border-radius: 999px;
+  }
+  .featured__lede {
+    font-size: 16.5px; color: #4a3d32; max-width: 65ch;
+    margin-bottom: 24px;
+  }
+  .featured__links {
+    display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 28px;
+  }
+  .featured__links a {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 10px 16px; border-radius: 10px;
+    font-weight: 600; font-size: 14px;
+    text-decoration: none;
+  }
+  .featured__links a.live {
+    background: var(--ink); color: var(--paper);
+    box-shadow: 0 3px 0 rgba(0,0,0,.15);
+  }
+  .featured__links a.code {
+    border: 1px solid var(--line); color: var(--bean-2);
+  }
+  .featured__links a.code:hover { background: var(--cream); }
+
+  .proof {
+    display: grid; gap: 14px;
+    grid-template-columns: repeat(2, 1fr);
+  }
+  @media (max-width: 720px) { .proof { grid-template-columns: 1fr; } }
+  .proof-row {
+    display: grid; grid-template-columns: 22px 1fr;
+    gap: 10px; align-items: start;
+    font-size: 14.5px; line-height: 1.5;
+  }
+  .proof-row::before {
+    content: "✓"; color: #2d7a35; font-weight: 700;
+    font-family: var(--mono);
+  }
+  .proof-row b { font-weight: 600; }
+  .proof-row code {
+    font-family: var(--mono); font-size: 12.5px;
+    background: var(--cream);
+    padding: 1px 5px; border-radius: 4px;
+  }
+
+  /* Skills grid */
+  .skills {
+    display: grid; gap: 16px;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    margin-top: 14px;
+  }
+  .skill-col {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 18px;
+  }
+  .skill-col h4 {
+    font-family: var(--mono); font-size: 11.5px;
+    text-transform: uppercase; letter-spacing: .08em;
+    color: var(--crema-deep); margin-bottom: 10px;
+  }
+  .skill-col ul { list-style: none; padding: 0; }
+  .skill-col li {
+    font-size: 13.5px; padding: 4px 0;
+    color: #4a3d32; line-height: 1.4;
+  }
+
+  /* Bio + CTA columns */
+  .bio-grid {
+    display: grid; grid-template-columns: 1.2fr .8fr;
+    gap: 40px; align-items: start; margin-top: 30px;
+  }
+  @media (max-width: 820px) { .bio-grid { grid-template-columns: 1fr; gap: 24px; } }
+  .bio p { font-size: 15.5px; color: #4a3d32; margin-bottom: 14px; }
+
+  .contact {
+    background: var(--ink); color: var(--paper);
+    border-radius: 14px; padding: 26px;
+  }
+  .contact h3 {
+    font-family: var(--display); font-size: 18px; margin-bottom: 6px;
+  }
+  .contact .hint {
+    color: rgba(245,239,228,.65); font-size: 13.5px;
+    margin-bottom: 18px;
+  }
+  .contact .row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 0; border-top: 1px solid rgba(245,239,228,.1);
+    font-family: var(--mono); font-size: 13.5px;
+  }
+  .contact .row:first-of-type { border-top: 0; }
+  .contact .row .k {
+    color: var(--crema); width: 70px; flex-shrink: 0;
+  }
+  .contact a { color: var(--paper); text-decoration: none; }
+  .contact a:hover { color: var(--crema); }
+
+  .availability {
+    display: inline-flex; align-items: center; gap: 8px;
+    margin-top: 14px;
+    background: rgba(94,184,98,.16); color: #a2e0a6;
+    padding: 8px 14px; border-radius: 999px;
+    font-family: var(--mono); font-size: 12px;
+    text-transform: uppercase; letter-spacing: .06em;
+  }
+  .availability::before {
+    content: ""; width: 8px; height: 8px; border-radius: 50%;
+    background: #5eb862; box-shadow: 0 0 0 4px rgba(94,184,98,.25);
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { box-shadow: 0 0 0 4px rgba(94,184,98,.25); }
+    50% { box-shadow: 0 0 0 8px rgba(94,184,98,.05); }
+  }
+
+  /* Section heading style for this page */
+  h2.h-line {
+    font-family: var(--display); font-weight: 700;
+    font-size: 24px; letter-spacing: -.01em;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--line);
+    margin-bottom: 22px;
+  }
+</style>
+</head>
+<body>
+
+<header class="nav">
+  <div class="wrap nav__inner">
+    <a href="/" class="brand"><span class="brand__dot"></span>Demo KDS</a>
+    <nav class="nav__links">
+      <a href="/">Overview</a>
+      <a href="/kds.html">KDS</a>
+      <a href="/counter.html">Counter</a>
+      <a href="/history.html">History</a>
+      <a href="/about.html" aria-current="page">About</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+
+  <!-- HERO -->
+  <section class="about-hero">
+    <div class="wrap">
+      <span class="eyebrow">Available · Melbourne · Junior–Mid Web Developer</span>
+      <h1>Hi, I'm <span class="accent">Muhammad Saboor.</span><br>I build and ship real web software.</h1>
+      <p class="lede">
+        Final-year Bachelor of Data Science at Victoria University Footscray, graduating October 2026. I write Node + vanilla JavaScript by preference, design my own UI, and prefer to learn by deploying things end-to-end rather than reading about them.
+      </p>
+      <div class="meta">
+        <span>Melbourne, VIC</span>
+        <span>Open to full-time + casual</span>
+        <span>Available immediately for part-time / from Nov 2026 for full-time</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" style="padding: 50px 0;">
+    <div class="wrap" style="max-width: 980px;">
+
+      <!-- FEATURED PROJECT -->
+      <div class="featured">
+        <div class="featured__head">
+          <div>
+            <span class="eyebrow" style="margin-bottom: 8px; display: inline-block;">Featured project</span>
+            <h2>Demo KDS — Kitchen Display System</h2>
+          </div>
+          <span class="pill">● Live in production</span>
+        </div>
+        <p class="featured__lede">
+          A tablet-optimised live order display for cafes, wired to Square's real order webhooks. Built from scratch in seven days — backend, frontend, deployment, monitoring. You're on the deployed version of it right now.
+        </p>
+        <div class="featured__links">
+          <a class="live" href="/kds.html" target="_blank">View the live KDS →</a>
+          <a class="code" href="https://github.com/iMuhammadSaboor/demo-kds" target="_blank">Source on GitHub →</a>
+        </div>
+
+        <h2 class="h-line" style="margin-top: 24px;">What this proves I can do</h2>
+        <div class="proof">
+          <div class="proof-row"><span><b>Real third-party API integration.</b> Square Orders API end-to-end — sandbox proven, production-ready with one env-var swap.</span></div>
+          <div class="proof-row"><span><b>Cryptographic signature verification.</b> HMAC-SHA256 webhook validation per Square's spec, written against Node's <code>crypto</code> module — no SDK dependency.</span></div>
+          <div class="proof-row"><span><b>Real-time UI without WebSockets.</b> Server-Sent Events with <code>20s</code> keep-alive, auto-reconnect, dual-mode client (SSE + localStorage fallback).</span></div>
+          <div class="proof-row"><span><b>Production deployment.</b> Render.com free tier behind Cloudflare edge, UptimeRobot keep-alive, environment-based config (sandbox vs production).</span></div>
+          <div class="proof-row"><span><b>Operational hardening.</b> HTTP Basic Auth on admin routes, atomic JSON file writes (no half-written state on crash), health endpoint for monitoring.</span></div>
+          <div class="proof-row"><span><b>Zero runtime dependencies.</b> No <code>express</code>, no <code>ws</code>, no Square SDK — Node's built-in <code>http</code>, <code>crypto</code>, and <code>fetch</code>. Boots in milliseconds.</span></div>
+          <div class="proof-row"><span><b>Design system from scratch.</b> CSS custom properties, three typeface families, signal colour system for prep-time windows. Same tokens drive every page.</span></div>
+          <div class="proof-row"><span><b>Documentation.</b> README, SETUP guide for the next person to pick it up, STATUS log of what works vs what's next. Same way I'd hand off to a colleague.</span></div>
+        </div>
+      </div>
+
+      <!-- SKILLS -->
+      <h2 class="h-line">What I work with</h2>
+      <div class="skills">
+        <div class="skill-col">
+          <h4>Backend</h4>
+          <ul>
+            <li>Node.js (20+, ESM, built-in <code>fetch</code>)</li>
+            <li>Python (Data Science course)</li>
+            <li>REST + webhook integrations</li>
+            <li>HMAC signing, OAuth flows</li>
+            <li>Server-Sent Events</li>
+            <li>JSON / file-based persistence</li>
+          </ul>
+        </div>
+        <div class="skill-col">
+          <h4>Frontend</h4>
+          <ul>
+            <li>Vanilla HTML/CSS/JS</li>
+            <li>Web Audio API</li>
+            <li>Chart.js</li>
+            <li>Responsive + tablet-first layouts</li>
+            <li>Cross-tab sync (storage events)</li>
+            <li>CSS custom properties / design tokens</li>
+          </ul>
+        </div>
+        <div class="skill-col">
+          <h4>DevOps + Hosting</h4>
+          <ul>
+            <li>Render.com / Fly.io / Railway</li>
+            <li>Cloudflare edge</li>
+            <li>ngrok (dev tunnels)</li>
+            <li>GitHub + <code>gh</code> CLI</li>
+            <li>UptimeRobot monitoring</li>
+            <li>Environment-based config</li>
+          </ul>
+        </div>
+        <div class="skill-col">
+          <h4>Data + Other</h4>
+          <ul>
+            <li>SQL (uni coursework)</li>
+            <li>Pandas, NumPy</li>
+            <li>Tableau, Power BI</li>
+            <li>Bluetooth RFCOMM (side project)</li>
+            <li>Reverse engineering BLE protocols</li>
+            <li>Documentation that engineers actually read</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- BIO + CONTACT -->
+      <div class="bio-grid">
+        <div class="bio">
+          <h2 class="h-line">A bit about me</h2>
+          <p>
+            I'm in the final year of a Bachelor of Data Science at Victoria University Footscray, graduating October 2026. I work as a barista part-time, which is where this KDS came from — I wanted to fix a real workflow problem I saw on the floor every shift, so I built and shipped a tool that does it.
+          </p>
+          <p>
+            I prefer learning by building. Last month I reverse-engineered the Bluetooth protocol for a Divoom miniToo speaker just to understand RFCOMM and audio frame timing. Next week it'll be something else. The KDS happens to be the one that became production-grade, so it's the one you can actually click through.
+          </p>
+          <p>
+            I'm looking for a full-time web developer role in Melbourne where I can keep shipping work like this — hopefully with a small enough team that I get to touch the whole stack and a senior dev I can learn from.
+          </p>
+        </div>
+
+        <aside class="contact">
+          <h3>Get in touch</h3>
+          <p class="hint">Best by email. I reply same day.</p>
+          <div class="row"><span class="k">Email</span><a href="mailto:bmuhammadsaboor@gmail.com">bmuhammadsaboor@gmail.com</a></div>
+          <div class="row"><span class="k">GitHub</span><a href="https://github.com/iMuhammadSaboor" target="_blank">iMuhammadSaboor</a></div>
+          <div class="row"><span class="k">Location</span>Melbourne, VIC</div>
+          <div class="row"><span class="k">Status</span>Final-year student · Bachelor of Data Science, VU Footscray</div>
+          <div class="availability">Available now</div>
+        </aside>
+      </div>
+
+    </div>
+  </section>
+</main>
+
+<footer class="footer">
+  <div class="wrap footer__row">
+    <div>© Muhammad Saboor · <a href="mailto:bmuhammadsaboor@gmail.com">bmuhammadsaboor@gmail.com</a></div>
+    <div class="mono tiny">Built with Node + vanilla JS · deployed on Render</div>
+  </div>
+</footer>
+
+</body>
+</html>
